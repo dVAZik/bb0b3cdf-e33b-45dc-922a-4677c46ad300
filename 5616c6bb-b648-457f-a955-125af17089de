@@ -1,0 +1,791 @@
+-- GigaChad Spy by Delta Executor
+-- Complete Modern Mobile GUI Remote Spy
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local TextService = game:GetService("TextService")
+local HttpService = game:GetService("HttpService")
+local CoreGui = game:GetService("CoreGui")
+
+local localPlayer = Players.LocalPlayer
+local mouse = localPlayer:GetMouse()
+
+-- Конфигурация
+local MAX_LOGS = 200
+local AUTO_BLOCK_THRESHOLD = 3 -- блокировка при частых вызовах
+local REFIRE_DELAY = 0.1
+
+-- Цвета
+local COLORS = {
+    BACKGROUND = Color3.fromRGB(25, 25, 35),
+    SECONDARY = Color3.fromRGB(40, 40, 50),
+    ACCENT = Color3.fromRGB(60, 60, 80),
+    TEXT = Color3.fromRGB(255, 255, 255),
+    EVENT_OUT = Color3.fromRGB(255, 255, 0),     -- Желтый
+    EVENT_IN = Color3.fromRGB(200, 200, 0),      -- Темно-желтый
+    FUNCTION_OUT = Color3.fromRGB(170, 0, 255),  -- Фиолетовый
+    FUNCTION_IN = Color3.fromRGB(120, 0, 200),   -- Темно-фиолетовый
+    SUCCESS = Color3.fromRGB(0, 255, 0),
+    ERROR = Color3.fromRGB(255, 50, 50),
+    WARNING = Color3.fromRGB(255, 150, 0)
+}
+
+-- Хранилище данных
+local spyData = {
+    logs = {},
+    blockedRemotes = {},
+    autoBlockCount = {},
+    selectedLog = nil
+}
+
+-- Вспомогательные функции
+local function getInstancePath(instance)
+    local path = {}
+    local current = instance
+    while current and current ~= game do
+        table.insert(path, 1, current.Name)
+        current = current.Parent
+    end
+    return table.concat(path, ".")
+end
+
+local function deepCopy(t)
+    local copy = {}
+    for k, v in pairs(t) do
+        if type(v) == "table" then
+            copy[k] = deepCopy(v)
+        else
+            copy[k] = v
+        end
+    end
+    return copy
+end
+
+local function valueToString(value, depth)
+    depth = depth or 0
+    if depth > 2 then return "..." end
+    
+    local valueType = typeof(value)
+    
+    if valueType == "table" then
+        local parts = {}
+        for k, v in pairs(value) do
+            table.insert(parts, string.format("[%s] = %s", valueToString(k, depth + 1), valueToString(v, depth + 1)))
+        end
+        return "{" .. table.concat(parts, ", ") .. "}"
+    elseif valueType == "string" then
+        return string.format("%q", value)
+    elseif valueType == "number" then
+        return tostring(value)
+    elseif valueType == "boolean" then
+        return tostring(value)
+    elseif valueType == "Vector3" then
+        return string.format("Vector3.new(%.3f, %.3f, %.3f)", value.X, value.Y, value.Z)
+    elseif valueType == "CFrame" then
+        local x, y, z, m11, m12, m13, m21, m22, m23, m31, m32, m33 = value:GetComponents()
+        return string.format("CFrame.new(%.3f, %.3f, %.3f, %.3f, %.3f, %.3f, %.3f, %.3f, %.3f, %.3f, %.3f, %.3f)", 
+            x, y, z, m11, m12, m13, m21, m22, m23, m31, m32, m33)
+    elseif valueType == "Color3" then
+        return string.format("Color3.new(%.3f, %.3f, %.3f)", value.R, value.G, value.B)
+    elseif valueType == "BrickColor" then
+        return string.format("BrickColor.new(%q)", value.Name)
+    elseif valueType == "Instance" then
+        if value:IsA("Player") then
+            return string.format("game:GetService(\"Players\"):FindFirstChild(%q)", value.Name)
+        else
+            return string.format("game:GetService(%q):FindFirstChild(%q)", value.ClassName, value.Name)
+        end
+    elseif valueType == "nil" then
+        return "nil"
+    elseif valueType == "buffer" then
+        return "--[[ Buffer data ]]"
+    else
+        return string.format("--[[ %s: %s ]]", valueType, tostring(value))
+    end
+end
+
+local function generateCode(remoteData)
+    if not remoteData then return "Select a remote to view code" end
+    
+    local argsString = ""
+    if #remoteData.args > 0 then
+        local argStrings = {}
+        for i, arg in ipairs(remoteData.args) do
+            table.insert(argStrings, string.format("    [%d] = %s", i, valueToString(arg)))
+        end
+        argsString = "local giga = {\n" .. table.concat(argStrings, ",\n") .. "\n}"
+    else
+        argsString = "local giga = {}"
+    end
+
+    local callString = ""
+    if remoteData.isFunction then
+        if remoteData.direction == "out" then
+            callString = string.format("%s:InvokeServer(unpack(giga))", remoteData.remotePath)
+        else
+            callString = string.format("-- Function incoming from server: %s", remoteData.remotePath)
+        end
+    else
+        if remoteData.direction == "out" then
+            callString = string.format("%s:FireServer(unpack(giga))", remoteData.remotePath)
+        else
+            callString = string.format("-- Event incoming from server: %s", remoteData.remotePath)
+        end
+    end
+
+    return argsString .. "\n" .. callString
+end
+
+-- Создание основного GUI
+local function createMainGUI()
+    local screenGui = Instance.new("ScreenGui")
+    screenGui.Name = "GigaChadSpy"
+    screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    
+    if RunService:IsStudio() then
+        screenGui.Parent = localPlayer:WaitForChild("PlayerGui")
+    else
+        screenGui.Parent = CoreGui
+    end
+
+    -- Плавающая кнопка
+    local floatButton = Instance.new("TextButton")
+    floatButton.Name = "FloatButton"
+    floatButton.Size = UDim2.new(0, 80, 0, 40)
+    floatButton.Position = UDim2.new(0, 20, 0.5, -20)
+    floatButton.BackgroundColor3 = COLORS.ACCENT
+    floatButton.Text = "<b>GCS</b>"
+    floatButton.TextColor3 = COLORS.TEXT
+    floatButton.TextScaled = true
+    floatButton.RichText = true
+    floatButton.Font = Enum.Font.Cartoon
+    floatButton.Visible = true
+    floatButton.Parent = screenGui
+
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 8)
+    corner.Parent = floatButton
+
+    -- Основное окно
+    local mainFrame = Instance.new("Frame")
+    mainFrame.Name = "MainFrame"
+    mainFrame.Size = UDim2.new(0.85, 0, 0.75, 0)
+    mainFrame.Position = UDim2.new(0.075, 0, 0.125, 0)
+    mainFrame.BackgroundColor3 = COLORS.BACKGROUND
+    mainFrame.Visible = false
+    mainFrame.Parent = screenGui
+
+    local mainCorner = Instance.new("UICorner")
+    mainCorner.CornerRadius = UDim.new(0, 12)
+    mainCorner.Parent = mainFrame
+
+    local mainStroke = Instance.new("UIStroke")
+    mainStroke.Color = COLORS.ACCENT
+    mainStroke.Thickness = 2
+    mainStroke.Parent = mainFrame
+
+    -- Заголовок
+    local titleBar = Instance.new("Frame")
+    titleBar.Name = "TitleBar"
+    titleBar.Size = UDim2.new(1, 0, 0, 45)
+    titleBar.BackgroundColor3 = COLORS.ACCENT
+    titleBar.Parent = mainFrame
+
+    local titleCorner = Instance.new("UICorner")
+    titleCorner.CornerRadius = UDim.new(0, 12)
+    titleCorner.Parent = titleBar
+
+    local titleLabel = Instance.new("TextLabel")
+    titleLabel.Name = "TitleLabel"
+    titleLabel.Size = UDim2.new(0.8, 0, 1, 0)
+    titleLabel.BackgroundTransparency = 1
+    titleLabel.Text = "<b>GigaChad Spy</b>"
+    titleLabel.TextColor3 = COLORS.TEXT
+    titleLabel.TextScaled = true
+    titleLabel.RichText = true
+    titleLabel.Font = Enum.Font.Cartoon
+    titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+    titleLabel.Parent = titleBar
+
+    local closeButton = Instance.new("TextButton")
+    closeButton.Name = "CloseButton"
+    closeButton.Size = UDim2.new(0, 40, 0, 40)
+    closeButton.Position = UDim2.new(1, -45, 0.5, -20)
+    closeButton.BackgroundColor3 = COLORS.ERROR
+    closeButton.Text = "X"
+    closeButton.TextColor3 = COLORS.TEXT
+    closeButton.TextScaled = true
+    closeButton.Font = Enum.Font.Cartoon
+    closeButton.Parent = titleBar
+
+    local closeCorner = Instance.new("UICorner")
+    closeCorner.CornerRadius = UDim.new(0, 8)
+    closeCorner.Parent = closeButton
+
+    -- Контейнер контента
+    local contentFrame = Instance.new("Frame")
+    contentFrame.Name = "ContentFrame"
+    contentFrame.Size = UDim2.new(1, 0, 1, -45)
+    contentFrame.Position = UDim2.new(0, 0, 0, 45)
+    contentFrame.BackgroundTransparency = 1
+    contentFrame.Parent = mainFrame
+
+    -- Левая панель (список ремов)
+    local leftPanel = Instance.new("Frame")
+    leftPanel.Name = "LeftPanel"
+    leftPanel.Size = UDim2.new(0.4, 0, 1, 0)
+    leftPanel.BackgroundColor3 = COLORS.SECONDARY
+    leftPanel.Parent = contentFrame
+
+    local leftCorner = Instance.new("UICorner")
+    leftCorner.CornerRadius = UDim.new(0, 8)
+    leftCorner.Parent = leftPanel
+
+    local remotesLabel = Instance.new("TextLabel")
+    remotesLabel.Name = "RemotesLabel"
+    remotesLabel.Size = UDim2.new(1, 0, 0, 35)
+    remotesLabel.BackgroundColor3 = COLORS.ACCENT
+    remotesLabel.Text = "<b>Remote Events/Functions</b>"
+    remotesLabel.TextColor3 = COLORS.TEXT
+    remotesLabel.TextScaled = true
+    remotesLabel.RichText = true
+    remotesLabel.Font = Enum.Font.Cartoon
+    remotesLabel.Parent = leftPanel
+
+    local remotesList = Instance.new("ScrollingFrame")
+    remotesList.Name = "RemotesList"
+    remotesList.Size = UDim2.new(1, 0, 1, -80)
+    remotesList.Position = UDim2.new(0, 0, 0, 35)
+    remotesList.BackgroundColor3 = COLORS.SECONDARY
+    remotesList.ScrollBarThickness = 6
+    remotesList.Parent = leftPanel
+
+    local uiListLayout = Instance.new("UIListLayout")
+    uiListLayout.Padding = UDim.new(0, 5)
+    uiListLayout.Parent = remotesList
+
+    -- Правая панель (код)
+    local rightPanel = Instance.new("Frame")
+    rightPanel.Name = "RightPanel"
+    rightPanel.Size = UDim2.new(0.6, 0, 1, 0)
+    rightPanel.Position = UDim2.new(0.4, 0, 0, 0)
+    rightPanel.BackgroundColor3 = COLORS.SECONDARY
+    rightPanel.Parent = contentFrame
+
+    local rightCorner = Instance.new("UICorner")
+    rightCorner.CornerRadius = UDim.new(0, 8)
+    rightCorner.Parent = rightPanel
+
+    local codeLabel = Instance.new("TextLabel")
+    codeLabel.Name = "CodeLabel"
+    codeLabel.Size = UDim2.new(1, 0, 0, 35)
+    codeLabel.BackgroundColor3 = COLORS.ACCENT
+    codeLabel.Text = "<b>Generated Code</b>"
+    codeLabel.TextColor3 = COLORS.TEXT
+    codeLabel.TextScaled = true
+    codeLabel.RichText = true
+    codeLabel.Font = Enum.Font.Cartoon
+    codeLabel.Parent = rightPanel
+
+    local codeBox = Instance.new("ScrollingFrame")
+    codeBox.Name = "CodeBox"
+    codeBox.Size = UDim2.new(1, -10, 0.65, -10)
+    codeBox.Position = UDim2.new(0, 5, 0, 40)
+    codeBox.BackgroundColor3 = COLORS.BACKGROUND
+    codeBox.ScrollBarThickness = 6
+    codeBox.Parent = rightPanel
+
+    local codeCorner = Instance.new("UICorner")
+    codeCorner.CornerRadius = UDim.new(0, 6)
+    codeCorner.Parent = codeBox
+
+    local codeText = Instance.new("TextLabel")
+    codeText.Name = "CodeText"
+    codeText.Size = UDim2.new(1, -10, 1, -10)
+    codeText.Position = UDim2.new(0, 5, 0, 5)
+    codeText.BackgroundTransparency = 1
+    codeText.Text = "Select a remote to view code"
+    codeText.TextColor3 = COLORS.TEXT
+    codeText.TextScaled = false
+    codeText.TextSize = 14
+    codeText.RichText = true
+    codeText.Font = Enum.Font.Cartoon
+    codeText.TextXAlignment = Enum.TextXAlignment.Left
+    codeText.TextYAlignment = Enum.TextYAlignment.Top
+    codeText.TextWrapped = true
+    codeText.Parent = codeBox
+
+    -- Панель кнопок
+    local buttonPanel = Instance.new("Frame")
+    buttonPanel.Name = "ButtonPanel"
+    buttonPanel.Size = UDim2.new(1, -10, 0.3, -10)
+    buttonPanel.Position = UDim2.new(0, 5, 0.65, 5)
+    buttonPanel.BackgroundColor3 = COLORS.ACCENT
+    buttonPanel.Parent = rightPanel
+
+    local buttonCorner = Instance.new("UICorner")
+    buttonCorner.CornerRadius = UDim.new(0, 8)
+    buttonCorner.Parent = buttonPanel
+
+    local buttonGrid = Instance.new("UIGridLayout")
+    buttonGrid.CellSize = UDim2.new(0.33, -5, 0.5, -5)
+    buttonGrid.CellPadding = UDim2.new(0, 5, 0, 5)
+    buttonGrid.Parent = buttonPanel
+
+    -- Кнопки действий
+    local buttons = {
+        {Name = "ReFire", Text = "🔥 Refire"},
+        {Name = "Copy", Text = "📋 Copy"},
+        {Name = "Block", Text = "🚫 Block"},
+        {Name = "Decompile", Text = "🔍 Source"},
+        {Name = "ClearLogs", Text = "🗑️ Clear"},
+        {Name = "ClearBlocks", Text = "🔓 Unblock All"}
+    }
+
+    for _, btnInfo in pairs(buttons) do
+        local button = Instance.new("TextButton")
+        button.Name = btnInfo.Name
+        button.Size = UDim2.new(1, 0, 1, 0)
+        button.BackgroundColor3 = COLORS.SECONDARY
+        button.Text = "<b>" .. btnInfo.Text .. "</b>"
+        button.TextColor3 = COLORS.TEXT
+        button.TextScaled = true
+        button.RichText = true
+        button.Font = Enum.Font.Cartoon
+        button.Parent = buttonPanel
+
+        local btnCorner = Instance.new("UICorner")
+        btnCorner.CornerRadius = UDim.new(0, 6)
+        btnCorner.Parent = button
+    end
+
+    -- Статус бар
+    local statusBar = Instance.new("Frame")
+    statusBar.Name = "StatusBar"
+    statusBar.Size = UDim2.new(1, 0, 0, 25)
+    statusBar.Position = UDim2.new(0, 0, 1, -25)
+    statusBar.BackgroundColor3 = COLORS.ACCENT
+    statusBar.Parent = leftPanel
+
+    local statusLabel = Instance.new("TextLabel")
+    statusLabel.Name = "StatusLabel"
+    statusLabel.Size = UDim2.new(1, -10, 1, 0)
+    statusLabel.Position = UDim2.new(0, 5, 0, 0)
+    statusLabel.BackgroundTransparency = 1
+    statusLabel.Text = "Logs: 0 | Blocked: 0"
+    statusLabel.TextColor3 = COLORS.TEXT
+    statusLabel.TextScaled = true
+    statusLabel.RichText = true
+    statusLabel.Font = Enum.Font.Cartoon
+    statusLabel.TextXAlignment = Enum.TextXAlignment.Left
+    statusLabel.Parent = statusBar
+
+    return screenGui, mainFrame, floatButton, closeButton, remotesList, codeText, buttonPanel, statusLabel
+end
+
+-- Хуки для ремов
+local function hookRemoteEvent(remoteEvent)
+    local oldFireServer = remoteEvent.FireServer
+    remoteEvent.FireServer = function(self, ...)
+        local args = {...}
+        local remotePath = self:GetFullName()
+        
+        if not spyData.blockedRemotes[remotePath] then
+            local logEntry = {
+                remote = self,
+                remotePath = remotePath,
+                args = args,
+                isFunction = false,
+                direction = "out",
+                timestamp = tick(),
+                callId = HttpService:GenerateGUID(false)
+            }
+            
+            table.insert(spyData.logs, 1, logEntry)
+            
+            -- Авто-блокировка
+            spyData.autoBlockCount[remotePath] = (spyData.autoBlockCount[remotePath] or 0) + 1
+            if spyData.autoBlockCount[remotePath] >= AUTO_BLOCK_THRESHOLD then
+                spyData.blockedRemotes[remotePath] = true
+            end
+            
+            -- Ограничение логов
+            if #spyData.logs > MAX_LOGS then
+                table.remove(spyData.logs, #spyData.logs)
+            end
+        end
+        
+        return oldFireServer(self, ...)
+    end
+end
+
+local function hookRemoteFunction(remoteFunction)
+    local oldInvokeServer = remoteFunction.InvokeServer
+    remoteFunction.InvokeServer = function(self, ...)
+        local args = {...}
+        local remotePath = self:GetFullName()
+        
+        if not spyData.blockedRemotes[remotePath] then
+            local logEntry = {
+                remote = self,
+                remotePath = remotePath,
+                args = args,
+                isFunction = true,
+                direction = "out",
+                timestamp = tick(),
+                callId = HttpService:GenerateGUID(false)
+            }
+            
+            table.insert(spyData.logs, 1, logEntry)
+            
+            -- Авто-блокировка
+            spyData.autoBlockCount[remotePath] = (spyData.autoBlockCount[remotePath] or 0) + 1
+            if spyData.autoBlockCount[remotePath] >= AUTO_BLOCK_THRESHOLD then
+                spyData.blockedRemotes[remotePath] = true
+            end
+            
+            if #spyData.logs > MAX_LOGS then
+                table.remove(spyData.logs, #spyData.logs)
+            end
+        end
+        
+        return oldInvokeServer(self, ...)
+    end
+end
+
+-- Хук входящих событий
+local function hookIncomingEvents()
+    -- Хук для RemoteEvents
+    local remoteEventMetatable = getrawmetatable(game:GetService("ReplicatedStorage").ChildAdded:Wait())
+    if remoteEventMetatable then
+        local oldNamecall = remoteEventMetatable.__namecall
+        remoteEventMetatable.__namecall = newcclosure(function(self, ...)
+            local method = getnamecallmethod()
+            local args = {...}
+            
+            if method == "FireClient" or method == "FireAllClients" then
+                local remotePath = self:GetFullName()
+                
+                if not spyData.blockedRemotes[remotePath] then
+                    local logEntry = {
+                        remote = self,
+                        remotePath = remotePath,
+                        args = args,
+                        isFunction = false,
+                        direction = "in",
+                        timestamp = tick(),
+                        callId = HttpService:GenerateGUID(false)
+                    }
+                    
+                    table.insert(spyData.logs, 1, logEntry)
+                    
+                    if #spyData.logs > MAX_LOGS then
+                        table.remove(spyData.logs, #spyData.logs)
+                    end
+                end
+            end
+            
+            return oldNamecall(self, ...)
+        end)
+    end
+end
+
+-- Поиск и хук всех ремов
+local function findAndHookRemotes()
+    local function processInstance(instance)
+        if instance:IsA("RemoteEvent") then
+            hookRemoteEvent(instance)
+        elseif instance:IsA("RemoteFunction") then
+            hookRemoteFunction(instance)
+        end
+        
+        for _, child in pairs(instance:GetChildren()) do
+            processInstance(child)
+        end
+    end
+    
+    processInstance(game)
+    
+    -- Хук для новых объектов
+    game.DescendantAdded:Connect(function(descendant)
+        wait()
+        if descendant:IsA("RemoteEvent") then
+            hookRemoteEvent(descendant)
+        elseif descendant:IsA("RemoteFunction") then
+            hookRemoteFunction(descendant)
+        end
+    end)
+end
+
+-- Функции действий
+local function refireRemote(remoteData)
+    if not remoteData then return end
+    
+    local success, result = pcall(function()
+        local args = {}
+        for i, arg in ipairs(remoteData.args) do
+            args[i] = arg
+        end
+        
+        if remoteData.isFunction then
+            if remoteData.direction == "out" then
+                return remoteData.remote:InvokeServer(unpack(args))
+            end
+        else
+            if remoteData.direction == "out" then
+                remoteData.remote:FireServer(unpack(args))
+                return true
+            end
+        end
+    end)
+    
+    return success, result
+end
+
+local function toggleBlockRemote(remotePath)
+    if spyData.blockedRemotes[remotePath] then
+        spyData.blockedRemotes[remotePath] = nil
+        spyData.autoBlockCount[remotePath] = nil
+        return false
+    else
+        spyData.blockedRemotes[remotePath] = true
+        return true
+    end
+end
+
+local function decompileSource(remoteData)
+    -- Заглушка для декомпиляции - в реальности требует дополнительных инструментов
+    local sourceInfo = string.format("-- Remote: %s\n-- Type: %s\n-- Direction: %s\n-- Time: %.3f\n-- Args count: %d",
+        remoteData.remotePath,
+        remoteData.isFunction and "Function" or "Event",
+        remoteData.direction,
+        remoteData.timestamp,
+        #remoteData.args
+    )
+    
+    return sourceInfo
+end
+
+-- Обновление GUI
+local function updateGUI(remotesList, codeText, buttonPanel, statusLabel)
+    -- Очистка списка
+    for _, child in pairs(remotesList:GetChildren()) do
+        if child:IsA("TextButton") then
+            child:Destroy()
+        end
+    end
+
+    -- Добавление логов
+    for i, logEntry in ipairs(spyData.logs) do
+        local remoteButton = Instance.new("TextButton")
+        remoteButton.Size = UDim2.new(1, -10, 0, 60)
+        remoteButton.Position = UDim2.new(0, 5, 0, (i-1)*65)
+        remoteButton.BackgroundColor3 = COLORS.BACKGROUND
+        remoteButton.AutoButtonColor = false
+        remoteButton.Text = ""
+        remoteButton.Parent = remotesList
+        
+        local buttonCorner = Instance.new("UICorner")
+        buttonCorner.CornerRadius = UDim.new(0, 6)
+        buttonCorner.Parent = remoteButton
+        
+        local stroke = Instance.new("UIStroke")
+        stroke.Color = logEntry.direction == "out" and 
+                      (logEntry.isFunction and COLORS.FUNCTION_OUT or COLORS.EVENT_OUT) or
+                      (logEntry.isFunction and COLORS.FUNCTION_IN or COLORS.EVENT_IN)
+        stroke.Thickness = 2
+        stroke.Parent = remoteButton
+
+        local nameLabel = Instance.new("TextLabel")
+        nameLabel.Size = UDim2.new(0.7, 0, 0.5, 0)
+        nameLabel.Position = UDim2.new(0, 5, 0, 5)
+        nameLabel.BackgroundTransparency = 1
+        nameLabel.Text = logEntry.remotePath
+        nameLabel.TextColor3 = COLORS.TEXT
+        nameLabel.TextScaled = true
+        nameLabel.RichText = true
+        nameLabel.Font = Enum.Font.Cartoon
+        nameLabel.TextXAlignment = Enum.TextXAlignment.Left
+        nameLabel.TextYAlignment = Enum.TextYAlignment.Top
+        nameLabel.TextWrapped = true
+        nameLabel.Parent = remoteButton
+        
+        local typeLabel = Instance.new("TextLabel")
+        typeLabel.Size = UDim2.new(0.25, 0, 0.3, 0)
+        typeLabel.Position = UDim2.new(0.7, 0, 0, 5)
+        typeLabel.BackgroundTransparency = 1
+        typeLabel.Text = logEntry.isFunction and "FUNC" : "EVENT"
+        typeLabel.TextColor3 = logEntry.direction == "out" and 
+                              (logEntry.isFunction and COLORS.FUNCTION_OUT or COLORS.EVENT_OUT) or
+                              (logEntry.isFunction and COLORS.FUNCTION_IN or COLORS.EVENT_IN)
+        typeLabel.TextScaled = true
+        typeLabel.RichText = true
+        typeLabel.Font = Enum.Font.Cartoon
+        typeLabel.Parent = remoteButton
+        
+        local dirLabel = Instance.new("TextLabel")
+        dirLabel.Size = UDim2.new(0.25, 0, 0.3, 0)
+        dirLabel.Position = UDim2.new(0.7, 0, 0.3, 5)
+        dirLabel.BackgroundTransparency = 1
+        dirLabel.Text = logEntry.direction == "out" and "OUT" : "IN"
+        dirLabel.TextColor3 = COLORS.TEXT
+        dirLabel.TextScaled = true
+        dirLabel.Font = Enum.Font.Cartoon
+        dirLabel.Parent = remoteButton
+        
+        local timeLabel = Instance.new("TextLabel")
+        timeLabel.Size = UDim2.new(1, -10, 0.4, 0)
+        timeLabel.Position = UDim2.new(0, 5, 0.5, 0)
+        timeLabel.BackgroundTransparency = 1
+        timeLabel.Text = string.format("T: %.2f | A: %d", logEntry.timestamp, #logEntry.args)
+        timeLabel.TextColor3 = COLORS.TEXT
+        timeLabel.TextScaled = true
+        timeLabel.TextXAlignment = Enum.TextXAlignment.Left
+        timeLabel.Font = Enum.Font.Cartoon
+        timeLabel.Parent = remoteButton
+        
+        -- Блокировка индикатор
+        if spyData.blockedRemotes[logEntry.remotePath] then
+            local blockIndicator = Instance.new("Frame")
+            blockIndicator.Size = UDim2.new(0, 10, 0, 10)
+            blockIndicator.Position = UDim2.new(1, -15, 0, 5)
+            blockIndicator.BackgroundColor3 = COLORS.ERROR
+            blockIndicator.Parent = remoteButton
+            
+            local blockCorner = Instance.new("UICorner")
+            blockCorner.CornerRadius = UDim.new(0, 5)
+            blockCorner.Parent = blockIndicator
+        end
+        
+        remoteButton.MouseButton1Click:Connect(function()
+            spyData.selectedLog = logEntry
+            local code = generateCode(logEntry)
+            codeText.Text = code
+            codeText.TextColor3 = COLORS.TEXT
+            
+            -- Обновление кнопок
+            buttonPanel:FindFirstChild("Block").Text = spyData.blockedRemotes[logEntry.remotePath] and "<b>🔓 Unblock</b>" or "<b>🚫 Block</b>"
+            buttonPanel:FindFirstChild("Block").BackgroundColor3 = spyData.blockedRemotes[logEntry.remotePath] and COLORS.SUCCESS or COLORS.ERROR
+        end)
+        
+        remoteButton.MouseEnter:Connect(function()
+            remoteButton.BackgroundColor3 = COLORS.ACCENT
+        end)
+        
+        remoteButton.MouseLeave:Connect(function()
+            remoteButton.BackgroundColor3 = COLORS.BACKGROUND
+        end)
+    end
+    
+    remotesList.CanvasSize = UDim2.new(0, 0, 0, #spyData.logs * 65)
+    
+    -- Обновление статуса
+    local blockedCount = 0
+    for _ in pairs(spyData.blockedRemotes) do
+        blockedCount = blockedCount + 1
+    end
+    statusLabel.Text = string.format("Logs: %d | Blocked: %d", #spyData.logs, blockedCount)
+end
+
+-- Основная функция
+local function initializeSpy()
+    local screenGui, mainFrame, floatButton, closeButton, remotesList, codeText, buttonPanel, statusLabel = createMainGUI()
+    
+    -- Обработчики кнопок
+    floatButton.MouseButton1Click:Connect(function()
+        mainFrame.Visible = not mainFrame.Visible
+        floatButton.Visible = not mainFrame.Visible
+    end)
+    
+    closeButton.MouseButton1Click:Connect(function()
+        mainFrame.Visible = false
+        floatButton.Visible = true
+    end)
+    
+    -- Обработчики действий
+    buttonPanel:FindFirstChild("ReFire").MouseButton1Click:Connect(function()
+        if spyData.selectedLog then
+            local success, result = refireRemote(spyData.selectedLog)
+            if success then
+                codeText.Text = generateCode(spyData.selectedLog) .. "\n\n-- ✅ Refire successful!"
+                if result ~= nil and result ~= true then
+                    codeText.Text = codeText.Text .. "\n-- Return: " .. valueToString(result)
+                end
+            else
+                codeText.Text = generateCode(spyData.selectedLog) .. "\n\n-- ❌ Refire failed: " .. tostring(result)
+            end
+        end
+    end)
+    
+    buttonPanel:FindFirstChild("Copy").MouseButton1Click:Connect(function()
+        if spyData.selectedLog then
+            local code = generateCode(spyData.selectedLog)
+            setclipboard(code)
+            codeText.Text = code .. "\n\n-- ✅ Copied to clipboard!"
+        end
+    end)
+    
+    buttonPanel:FindFirstChild("Block").MouseButton1Click:Connect(function()
+        if spyData.selectedLog then
+            local isBlocked = toggleBlockRemote(spyData.selectedLog.remotePath)
+            buttonPanel:FindFirstChild("Block").Text = isBlocked and "<b>🔓 Unblock</b>" or "<b>🚫 Block</b>"
+            buttonPanel:FindFirstChild("Block").BackgroundColor3 = isBlocked and COLORS.SUCCESS or COLORS.ERROR
+            codeText.Text = generateCode(spyData.selectedLog) .. 
+                           (isBlocked and "\n\n-- ✅ Remote blocked!" or "\n\n-- ✅ Remote unblocked!")
+        end
+    end)
+    
+    buttonPanel:FindFirstChild("Decompile").MouseButton1Click:Connect(function()
+        if spyData.selectedLog then
+            local sourceInfo = decompileSource(spyData.selectedLog)
+            codeText.Text = "-- Source Information --\n" .. sourceInfo .. "\n\n" .. generateCode(spyData.selectedLog)
+        end
+    end)
+    
+    buttonPanel:FindFirstChild("ClearLogs").MouseButton1Click:Connect(function()
+        spyData.logs = {}
+        spyData.selectedLog = nil
+        codeText.Text = "Select a remote to view code"
+        updateGUI(remotesList, codeText, buttonPanel, statusLabel)
+    end)
+    
+    buttonPanel:FindFirstChild("ClearBlocks").MouseButton1Click:Connect(function()
+        spyData.blockedRemotes = {}
+        spyData.autoBlockCount = {}
+        if spyData.selectedLog then
+            buttonPanel:FindFirstChild("Block").Text = "<b>🚫 Block</b>"
+            buttonPanel:FindFirstChild("Block").BackgroundColor3 = COLORS.ERROR
+        end
+        codeText.Text = generateCode(spyData.selectedLog) .. "\n\n-- ✅ All blocks cleared!"
+        updateGUI(remotesList, codeText, buttonPanel, statusLabel)
+    end)
+    
+    -- Хук ремов
+    findAndHookRemotes()
+    hookIncomingEvents()
+    
+    -- Обновление GUI
+    local updateConnection
+    updateConnection = RunService.Heartbeat:Connect(function()
+        if screenGui.Parent then
+            updateGUI(remotesList, codeText, buttonPanel, statusLabel)
+        else
+            updateConnection:Disconnect()
+        end
+    end)
+    
+    return screenGui
+end
+
+-- Запуск
+if not _G.GigaChadSpyLoaded then
+    _G.GigaChadSpyLoaded = true
+    local success, err = pcall(initializeSpy)
+    if success then
+        print("🎯 GigaChad Spy loaded successfully!")
+    else
+        warn("❌ GigaChad Spy failed to load: " .. tostring(err))
+    end
+else
+    print("⚠️ GigaChad Spy already loaded!")
+end
