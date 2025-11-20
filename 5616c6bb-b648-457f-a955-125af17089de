@@ -24,16 +24,17 @@ local DecompileButton = Instance.new("TextButton")
 
 -- Properties
 GigaChadSpy.Name = "GigaChadSpy"
-GigaChadSpy.Parent = game.CoreGui
+GigaChadSpy.Parent = game:GetService("CoreGui") or game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui")
 GigaChadSpy.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+GigaChadSpy.ResetOnSpawn = false
 
 -- Floating Button
 FloatingButton.Name = "FloatingButton"
 FloatingButton.Parent = GigaChadSpy
-FloatingButton.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+FloatingButton.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 FloatingButton.BorderSizePixel = 0
 FloatingButton.Position = UDim2.new(0, 20, 0, 20)
-FloatingButton.Size = UDim2.new(0, 60, 0, 60)
+FloatingButton.Size = UDim2.new(0, 70, 0, 70)
 FloatingButton.ZIndex = 100
 FloatingButton.Font = Enum.Font.Cartoon
 FloatingButton.Text = "GCS"
@@ -41,76 +42,88 @@ FloatingButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 FloatingButton.TextScaled = true
 FloatingButton.RichText = true
 FloatingButton.Visible = true
+FloatingButton.AutoButtonColor = true
 
 -- Main Frame
 MainFrame.Name = "MainFrame"
 MainFrame.Parent = GigaChadSpy
-MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-MainFrame.BorderSizePixel = 0
+MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+MainFrame.BorderSizePixel = 1
+MainFrame.BorderColor3 = Color3.fromRGB(50, 50, 50)
 MainFrame.Position = UDim2.new(0.1, 0, 0.1, 0)
 MainFrame.Size = UDim2.new(0.8, 0, 0.8, 0)
 MainFrame.Visible = false
+MainFrame.ClipsDescendants = true
 
 -- Top Bar
 TopBar.Name = "TopBar"
 TopBar.Parent = MainFrame
-TopBar.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+TopBar.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 TopBar.BorderSizePixel = 0
-TopBar.Size = UDim2.new(1, 0, 0, 40)
+TopBar.Size = UDim2.new(1, 0, 0, 45)
 
 Title.Name = "Title"
 Title.Parent = TopBar
-Title.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+Title.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 Title.BorderSizePixel = 0
 Title.Size = UDim2.new(0.8, 0, 1, 0)
 Title.Font = Enum.Font.Cartoon
-Title.Text = "GigaChad Spy"
-Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.Text = "<b>GigaChad Spy</b>"
+Title.TextColor3 = Color3.fromRGB(255, 215, 0)
 Title.TextScaled = true
 Title.RichText = true
+Title.TextXAlignment = Enum.TextXAlignment.Left
+Title.Position = UDim2.new(0.02, 0, 0, 0)
 
 CloseButton.Name = "CloseButton"
 CloseButton.Parent = TopBar
 CloseButton.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
 CloseButton.BorderSizePixel = 0
-CloseButton.Position = UDim2.new(0.9, 0, 0, 0)
-CloseButton.Size = UDim2.new(0.1, 0, 1, 0)
+CloseButton.Position = UDim2.new(0.92, 0, 0.1, 0)
+CloseButton.Size = UDim2.new(0.07, 0, 0.8, 0)
 CloseButton.Font = Enum.Font.Cartoon
-CloseButton.Text = "X"
+CloseButton.Text = "✕"
 CloseButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 CloseButton.TextScaled = true
 CloseButton.RichText = true
+CloseButton.AutoButtonColor = true
 
 -- Content
 Content.Name = "Content"
 Content.Parent = MainFrame
-Content.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+Content.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
 Content.BorderSizePixel = 0
-Content.Position = UDim2.new(0, 0, 0, 40)
-Content.Size = UDim2.new(1, 0, 1, -40)
+Content.Position = UDim2.new(0, 0, 0, 45)
+Content.Size = UDim2.new(1, 0, 1, -45)
 
 -- Left Panel
 LeftPanel.Name = "LeftPanel"
 LeftPanel.Parent = Content
-LeftPanel.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-LeftPanel.BorderSizePixel = 0
+LeftPanel.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+LeftPanel.BorderSizePixel = 1
+LeftPanel.BorderColor3 = Color3.fromRGB(40, 40, 40)
 LeftPanel.Size = UDim2.new(0.4, 0, 1, 0)
-LeftPanel.CanvasSize = UDim2.new(0, 0, 2, 0)
-LeftPanel.ScrollBarThickness = 5
+LeftPanel.CanvasSize = UDim2.new(0, 0, 0, 0)
+LeftPanel.ScrollBarThickness = 6
+LeftPanel.ScrollBarImageColor3 = Color3.fromRGB(80, 80, 80)
+LeftPanel.VerticalScrollBarInset = Enum.ScrollBarInset.Always
 
 -- Remote Template
 RemoteTemplate.Name = "RemoteTemplate"
 RemoteTemplate.Parent = LeftPanel
-RemoteTemplate.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-RemoteTemplate.BorderSizePixel = 0
-RemoteTemplate.Size = UDim2.new(1, -10, 0, 60)
+RemoteTemplate.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+RemoteTemplate.BorderSizePixel = 1
+RemoteTemplate.BorderColor3 = Color3.fromRGB(50, 50, 50)
+RemoteTemplate.Size = UDim2.new(1, -12, 0, 65)
 RemoteTemplate.Visible = false
+RemoteTemplate.AutoButtonColor = false
 
 RemoteIcon.Name = "RemoteIcon"
 RemoteIcon.Parent = RemoteTemplate
-RemoteIcon.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
-RemoteIcon.BorderSizePixel = 0
-RemoteIcon.Position = UDim2.new(0, 5, 0, 5)
+RemoteIcon.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+RemoteIcon.BorderSizePixel = 1
+RemoteIcon.BorderColor3 = Color3.fromRGB(60, 60, 60)
+RemoteIcon.Position = UDim2.new(0, 8, 0, 8)
 RemoteIcon.Size = UDim2.new(0, 50, 0, 50)
 RemoteIcon.Font = Enum.Font.Cartoon
 RemoteIcon.Text = "🔍"
@@ -120,23 +133,24 @@ RemoteIcon.RichText = true
 
 RemoteName.Name = "RemoteName"
 RemoteName.Parent = RemoteTemplate
-RemoteName.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+RemoteName.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 RemoteName.BorderSizePixel = 0
-RemoteName.Position = UDim2.new(0, 60, 0, 5)
-RemoteName.Size = UDim2.new(1, -65, 0, 30)
+RemoteName.Position = UDim2.new(0, 65, 0, 8)
+RemoteName.Size = UDim2.new(1, -70, 0, 25)
 RemoteName.Font = Enum.Font.Cartoon
 RemoteName.Text = "RemoteName"
 RemoteName.TextColor3 = Color3.fromRGB(255, 255, 255)
 RemoteName.TextScaled = true
 RemoteName.RichText = true
 RemoteName.TextXAlignment = Enum.TextXAlignment.Left
+RemoteName.TextYAlignment = Enum.TextYAlignment.Top
 
 RemoteType.Name = "RemoteType"
 RemoteType.Parent = RemoteTemplate
-RemoteType.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+RemoteType.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 RemoteType.BorderSizePixel = 0
-RemoteType.Position = UDim2.new(0, 60, 0, 35)
-RemoteType.Size = UDim2.new(1, -65, 0, 20)
+RemoteType.Position = UDim2.new(0, 65, 0, 35)
+RemoteType.Size = UDim2.new(1, -70, 0, 22)
 RemoteType.Font = Enum.Font.Cartoon
 RemoteType.Text = "Event → Server"
 RemoteType.TextColor3 = Color3.fromRGB(200, 200, 200)
@@ -147,111 +161,72 @@ RemoteType.TextXAlignment = Enum.TextXAlignment.Left
 -- Right Panel
 RightPanel.Name = "RightPanel"
 RightPanel.Parent = Content
-RightPanel.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-RightPanel.BorderSizePixel = 0
+RightPanel.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+RightPanel.BorderSizePixel = 1
+RightPanel.BorderColor3 = Color3.fromRGB(40, 40, 40)
 RightPanel.Position = UDim2.new(0.4, 0, 0, 0)
 RightPanel.Size = UDim2.new(0.6, 0, 1, 0)
 
 CodeFrame.Name = "CodeFrame"
 CodeFrame.Parent = RightPanel
-CodeFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
-CodeFrame.BorderSizePixel = 0
+CodeFrame.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
+CodeFrame.BorderSizePixel = 1
+CodeFrame.BorderColor3 = Color3.fromRGB(40, 40, 40)
 CodeFrame.Size = UDim2.new(1, 0, 0.7, 0)
-CodeFrame.CanvasSize = UDim2.new(0, 0, 2, 0)
-CodeFrame.ScrollBarThickness = 5
+CodeFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
+CodeFrame.ScrollBarThickness = 6
+CodeFrame.ScrollBarImageColor3 = Color3.fromRGB(80, 80, 80)
+CodeFrame.VerticalScrollBarInset = Enum.ScrollBarInset.Always
 
 CodeTemplate.Name = "CodeTemplate"
 CodeTemplate.Parent = CodeFrame
-CodeTemplate.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+CodeTemplate.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
 CodeTemplate.BorderSizePixel = 0
-CodeTemplate.Size = UDim2.new(1, -10, 0, 30)
+CodeTemplate.Size = UDim2.new(1, -10, 0, 25)
 CodeTemplate.Visible = false
 CodeTemplate.Font = Enum.Font.Code
 CodeTemplate.Text = "local data = {}"
-CodeTemplate.TextColor3 = Color3.fromRGB(255, 255, 255)
-CodeTemplate.TextScaled = true
-CodeTemplate.RichText = true
+CodeTemplate.TextColor3 = Color3.fromRGB(220, 220, 220)
+CodeTemplate.TextSize = 14
+CodeTemplate.RichText = false
 CodeTemplate.TextXAlignment = Enum.TextXAlignment.Left
+CodeTemplate.TextYAlignment = Enum.TextYAlignment.Top
+CodeTemplate.TextWrapped = true
 
 ButtonsFrame.Name = "ButtonsFrame"
 ButtonsFrame.Parent = RightPanel
-ButtonsFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-ButtonsFrame.BorderSizePixel = 0
+ButtonsFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+ButtonsFrame.BorderSizePixel = 1
+ButtonsFrame.BorderColor3 = Color3.fromRGB(45, 45, 45)
 ButtonsFrame.Position = UDim2.new(0, 0, 0.7, 0)
 ButtonsFrame.Size = UDim2.new(1, 0, 0.3, 0)
 
 -- Buttons
-local buttonProps = {
-    BackgroundColor3 = Color3.fromRGB(40, 40, 40),
-    BorderSizePixel = 0,
-    Font = Enum.Font.Cartoon,
-    TextColor3 = Color3.fromRGB(255, 255, 255),
-    TextScaled = true,
-    RichText = true
-}
-
-ReFireButton.Name = "ReFireButton"
-ReFireButton.Parent = ButtonsFrame
-ReFireButton.Size = UDim2.new(0.33, -2, 0.5, -2)
-ReFireButton.Position = UDim2.new(0, 1, 0, 1)
-ReFireButton.Text = "Refire"
-for prop, value in pairs(buttonProps) do
-    ReFireButton[prop] = value
+local function CreateButton(name, text, position, size)
+    local button = Instance.new("TextButton")
+    button.Name = name
+    button.Parent = ButtonsFrame
+    button.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+    button.BorderSizePixel = 1
+    button.BorderColor3 = Color3.fromRGB(60, 60, 60)
+    button.Position = position
+    button.Size = size
+    button.Font = Enum.Font.Cartoon
+    button.Text = text
+    button.TextColor3 = Color3.fromRGB(255, 255, 255)
+    button.TextScaled = true
+    button.RichText = true
+    button.AutoButtonColor = true
+    return button
 end
 
-CopyButton.Name = "CopyButton"
-CopyButton.Parent = ButtonsFrame
-CopyButton.Size = UDim2.new(0.33, -2, 0.5, -2)
-CopyButton.Position = UDim2.new(0.33, 1, 0, 1)
-CopyButton.Text = "Copy"
-for prop, value in pairs(buttonProps) do
-    CopyButton[prop] = value
-end
-
-BlockButton.Name = "BlockButton"
-BlockButton.Parent = ButtonsFrame
-BlockButton.Size = UDim2.new(0.33, -2, 0.5, -2)
-BlockButton.Position = UDim2.new(0.66, 1, 0, 1)
-BlockButton.Text = "Block"
-for prop, value in pairs(buttonProps) do
-    BlockButton[prop] = value
-end
-
-ClearLogsButton.Name = "ClearLogsButton"
-ClearLogsButton.Parent = ButtonsFrame
-ClearLogsButton.Size = UDim2.new(0.33, -2, 0.5, -2)
-ClearLogsButton.Position = UDim2.new(0, 1, 0.5, 1)
-ClearLogsButton.Text = "Clear Logs"
-for prop, value in pairs(buttonProps) do
-    ClearLogsButton[prop] = value
-end
-
-ClearBlocksButton.Name = "ClearBlocksButton"
-ClearBlocksButton.Parent = ButtonsFrame
-ClearBlocksButton.Size = UDim2.new(0.33, -2, 0.5, -2)
-ClearBlocksButton.Position = UDim2.new(0.33, 1, 0.5, 1)
-ClearBlocksButton.Text = "Clear Blocks"
-for prop, value in pairs(buttonProps) do
-    ClearBlocksButton[prop] = value
-end
-
-AutoBlockButton.Name = "AutoBlockButton"
-AutoBlockButton.Parent = ButtonsFrame
-AutoBlockButton.Size = UDim2.new(0.33, -2, 0.5, -2)
-AutoBlockButton.Position = UDim2.new(0.66, 1, 0.5, 1)
-AutoBlockButton.Text = "Auto Block: OFF"
-for prop, value in pairs(buttonProps) do
-    AutoBlockButton[prop] = value
-end
-
-DecompileButton.Name = "DecompileButton"
-DecompileButton.Parent = ButtonsFrame
-DecompileButton.Size = UDim2.new(1, -2, 0.5, -2)
-DecompileButton.Position = UDim2.new(0, 1, 1, -50)
-DecompileButton.Text = "Decompile Source"
-for prop, value in pairs(buttonProps) do
-    DecompileButton[prop] = value
-end
+ReFireButton = CreateButton("ReFireButton", "🔄 Refire", UDim2.new(0.02, 0, 0.05, 0), UDim2.new(0.3, -5, 0.4, -5))
+CopyButton = CreateButton("CopyButton", "📋 Copy", UDim2.new(0.34, 0, 0.05, 0), UDim2.new(0.3, -5, 0.4, -5))
+BlockButton = CreateButton("BlockButton", "🚫 Block", UDim2.new(0.66, 0, 0.05, 0), UDim2.new(0.3, -5, 0.4, -5))
+ClearLogsButton = CreateButton("ClearLogsButton", "🗑️ Clear Logs", UDim2.new(0.02, 0, 0.5, 0), UDim2.new(0.3, -5, 0.4, -5))
+ClearBlocksButton = CreateButton("ClearBlocksButton", "🔓 Clear Blocks", UDim2.new(0.34, 0, 0.5, 0), UDim2.new(0.3, -5, 0.4, -5))
+AutoBlockButton = CreateButton("AutoBlockButton", "🤖 Auto: OFF", UDim2.new(0.66, 0, 0.5, 0), UDim2.new(0.3, -5, 0.4, -5))
+DecompileButton = CreateButton("DecompileButton", "🔍 Decompile", UDim2.new(0.02, 0, 0.85, 0), UDim2.new(0.96, 0, 0.2, -5))
 
 -- Spy Logic
 local GigaChadSpy = {}
@@ -260,46 +235,90 @@ GigaChadSpy.BlockedRemotes = {}
 GigaChadSpy.MaxLogs = 200
 GigaChadSpy.AutoBlock = false
 GigaChadSpy.CurrentRemote = nil
+GigaChadSpy.IsHooked = false
 
--- Utility Functions
+-- Safe GetPath function
 function GigaChadSpy.GetPath(instance)
-    local path = {}
-    local current = instance
+    local success, path = pcall(function()
+        local pathParts = {}
+        local current = instance
+        
+        while current and current ~= game do
+            if not pcall(function() return current.Name end) then
+                return "InvalidInstance"
+            end
+            table.insert(pathParts, 1, current.Name)
+            current = current.Parent
+            if not current then break end
+        end
+        
+        if #pathParts == 0 then
+            return "UnknownPath"
+        end
+        
+        local parentService = "ReplicatedStorage"
+        if instance.Parent then
+            parentService = tostring(instance.Parent.ClassName)
+        end
+        
+        return "game:GetService(\"" .. parentService .. "\")" .. table.concat(pathParts, ".")
+    end)
     
-    while current and current ~= game do
-        table.insert(path, 1, current.Name)
-        current = current.Parent
-    end
-    
-    return "game:GetService(\"" .. tostring(instance.Parent.ClassName) .. "\")" .. table.concat(path, ".")
+    return success and path or "UnknownPath"
 end
 
-function GigaChadSpy.SerializeValue(value)
+-- Improved SerializeValue with better error handling
+function GigaChadSpy.SerializeValue(value, depth)
+    depth = depth or 0
+    if depth > 5 then return "\"<max_depth>\"\" end
+    
     local valueType = typeof(value)
     
-    if valueType == "string" then
-        return "\"" .. value .. "\""
-    elseif valueType == "number" then
-        return tostring(value)
-    elseif valueType == "boolean" then
-        return tostring(value)
-    elseif valueType == "table" then
-        local parts = {}
-        for k, v in pairs(value) do
-            table.insert(parts, "[" .. GigaChadSpy.SerializeValue(k) .. "] = " .. GigaChadSpy.SerializeValue(v))
+    local success, result = pcall(function()
+        if valueType == "string" then
+            return "\"" .. tostring(value):gsub("\"", "\\\"") .. "\""
+        elseif valueType == "number" then
+            if value == math.huge then
+                return "math.huge"
+            elseif value == -math.huge then
+                return "-math.huge"
+            elseif value ~= value then -- NaN
+                return "0/0"
+            else
+                return tostring(value)
+            end
+        elseif valueType == "boolean" then
+            return tostring(value)
+        elseif valueType == "table" then
+            local parts = {}
+            local count = 0
+            for k, v in pairs(value) do
+                count = count + 1
+                if count > 50 then -- Limit table size
+                    table.insert(parts, "-- ... (table too large)")
+                    break
+                end
+                local keyStr = type(k) == "number" and "[" .. k .. "]" or "[\"" .. tostring(k) .. "\"]"
+                table.insert(parts, keyStr .. " = " .. GigaChadSpy.SerializeValue(v, depth + 1))
+            end
+            return "{" .. table.concat(parts, ", ") .. "}"
+        elseif valueType == "Vector3" then
+            return "Vector3.new(" .. value.X .. ", " .. value.Y .. ", " .. value.Z .. ")"
+        elseif valueType == "CFrame" then
+            local components = {value:GetComponents()}
+            return "CFrame.new(" .. table.concat(components, ", ") .. ")"
+        elseif valueType == "Color3" then
+            return "Color3.new(" .. value.R .. ", " .. value.G .. ", " .. value.B .. ")"
+        elseif valueType == "Instance" then
+            return GigaChadSpy.GetPath(value)
+        elseif valueType == "nil" then
+            return "nil"
+        else
+            return "\"" .. tostring(value) .. "\""
         end
-        return "{" .. table.concat(parts, ", ") .. "}"
-    elseif valueType == "Vector3" then
-        return "Vector3.new(" .. value.X .. ", " .. value.Y .. ", " .. value.Z .. ")"
-    elseif valueType == "CFrame" then
-        return "CFrame.new(" .. tostring(value) .. ")"
-    elseif valueType == "Color3" then
-        return "Color3.new(" .. value.R .. ", " .. value.G .. ", " .. value.B .. ")"
-    elseif valueType == "Instance" then
-        return GigaChadSpy.GetPath(value)
-    else
-        return tostring(value)
-    end
+    end)
+    
+    return success and result or "\"<serialization_error>\""
 end
 
 function GigaChadSpy.GenerateCode(remoteName, remoteType, args, path)
@@ -308,7 +327,12 @@ function GigaChadSpy.GenerateCode(remoteName, remoteType, args, path)
     if #args > 0 then
         code = code .. "local giga = {\n"
         for i, arg in ipairs(args) do
-            code = code .. "    [" .. i .. "] = " .. GigaChadSpy.SerializeValue(arg) .. ",\n"
+            if i <= 20 then -- Limit args displayed
+                code = code .. "    [" .. i .. "] = " .. GigaChadSpy.SerializeValue(arg) .. ",\n"
+            else
+                code = code .. "    -- ... (" .. (#args - 20) .. " more arguments)\n"
+                break
+            end
         end
         code = code .. "}\n\n"
         
@@ -328,13 +352,18 @@ function GigaChadSpy.GenerateCode(remoteName, remoteType, args, path)
     return code
 end
 
--- UI Functions
+-- UI Functions with better error handling
 function GigaChadSpy.AddRemote(remoteName, remoteType, direction, args, path)
-    if GigaChadSpy.BlockedRemotes[remoteName] then return end
+    if not remoteName or GigaChadSpy.BlockedRemotes[remoteName] then 
+        return 
+    end
     
-    if #GigaChadSpy.Remotes >= GigaChadSpy.MaxLogs then
-        GigaChadSpy.Remotes[1]:Destroy()
-        table.remove(GigaChadSpy.Remotes, 1)
+    -- Clean old logs if exceeding max
+    while #GigaChadSpy.Remotes >= GigaChadSpy.MaxLogs do
+        local oldRemote = table.remove(GigaChadSpy.Remotes, 1)
+        if oldRemote and oldRemote:IsDescendantOf(LeftPanel) then
+            oldRemote:Destroy()
+        end
     end
     
     local remoteClone = RemoteTemplate:Clone()
@@ -366,12 +395,13 @@ function GigaChadSpy.AddRemote(remoteName, remoteType, direction, args, path)
     end
     
     remoteClone.RemoteIcon.BackgroundColor3 = iconColor
-    remoteClone.RemoteName.Text = remoteName
+    remoteClone.RemoteName.Text = tostring(remoteName):sub(1, 50) -- Limit name length
     remoteClone.RemoteType.Text = typeText
     remoteClone.RemoteType.TextColor3 = typeColor
     
     -- Position the new remote
-    remoteClone.Position = UDim2.new(0, 5, 0, (#GigaChadSpy.Remotes * 65) + 5)
+    local yPosition = (#GigaChadSpy.Remotes * 70) + 5
+    remoteClone.Position = UDim2.new(0, 6, 0, yPosition)
     
     -- Store remote data
     local remoteData = {
@@ -388,18 +418,20 @@ function GigaChadSpy.AddRemote(remoteName, remoteType, direction, args, path)
     
     -- Click event
     remoteClone.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             GigaChadSpy.ShowCode(remoteData)
         end
     end)
     
     -- Update canvas size
-    LeftPanel.CanvasSize = UDim2.new(0, 0, 0, (#GigaChadSpy.Remotes * 65) + 10)
+    LeftPanel.CanvasSize = UDim2.new(0, 0, 0, yPosition + 70)
 end
 
 function GigaChadSpy.ShowCode(remoteData)
     GigaChadSpy.CurrentRemote = remoteData
     CodeFrame:ClearAllChildren()
+    
+    if not remoteData or not remoteData.Code then return end
     
     local lines = {}
     for line in remoteData.Code:gmatch("[^\r\n]+") do
@@ -411,23 +443,29 @@ function GigaChadSpy.ShowCode(remoteData)
         codeLine.Parent = CodeFrame
         codeLine.Visible = true
         codeLine.Text = line
-        codeLine.Position = UDim2.new(0, 5, 0, (i-1) * 35)
+        codeLine.Position = UDim2.new(0, 5, 0, (i-1) * 28)
+        codeLine.Size = UDim2.new(1, -10, 0, 25)
     end
     
-    CodeFrame.CanvasSize = UDim2.new(0, 0, 0, #lines * 35)
+    CodeFrame.CanvasSize = UDim2.new(0, 0, 0, #lines * 28)
 end
 
 function GigaChadSpy.ClearLogs()
     for _, remote in ipairs(GigaChadSpy.Remotes) do
-        remote:Destroy()
+        if remote:IsDescendantOf(LeftPanel) then
+            remote:Destroy()
+        end
     end
     GigaChadSpy.Remotes = {}
     CodeFrame:ClearAllChildren()
     LeftPanel.CanvasSize = UDim2.new(0, 0, 0, 0)
+    GigaChadSpy.CurrentRemote = nil
 end
 
 function GigaChadSpy.BlockRemote(remoteName)
-    GigaChadSpy.BlockedRemotes[remoteName] = true
+    if remoteName then
+        GigaChadSpy.BlockedRemotes[remoteName] = true
+    end
 end
 
 function GigaChadSpy.ClearBlocks()
@@ -436,131 +474,146 @@ end
 
 function GigaChadSpy.ToggleAutoBlock()
     GigaChadSpy.AutoBlock = not GigaChadSpy.AutoBlock
-    AutoBlockButton.Text = "Auto Block: " .. (GigaChadSpy.AutoBlock and "ON" or "OFF")
+    AutoBlockButton.Text = GigaChadSpy.AutoBlock and "🤖 Auto: ON" or "🤖 Auto: OFF"
+    AutoBlockButton.BackgroundColor3 = GigaChadSpy.AutoBlock and Color3.fromRGB(60, 120, 60) or Color3.fromRGB(35, 35, 35)
 end
 
 function GigaChadSpy.CopyCode()
-    if GigaChadSpy.CurrentRemote then
-        setclipboard(GigaChadSpy.CurrentRemote.Code)
+    if GigaChadSpy.CurrentRemote and GigaChadSpy.CurrentRemote.Code then
+        pcall(function()
+            setclipboard(GigaChadSpy.CurrentRemote.Code)
+        end)
     end
 end
 
 function GigaChadSpy.ReFire()
-    if GigaChadSpy.CurrentRemote then
+    if GigaChadSpy.CurrentRemote and GigaChadSpy.CurrentRemote.Code then
         local success, result = pcall(function()
             loadstring(GigaChadSpy.CurrentRemote.Code)()
         end)
         if not success then
-            warn("Error refiring remote: " .. result)
+            warn("[GigaChad Spy] Error refiring remote: " .. tostring(result))
         end
     end
 end
 
--- Hook into remotes
-local gameMeta = getrawmetatable(game)
-local oldNamecall = gameMeta.__namecall
-
-setreadonly(gameMeta, false)
-
-gameMeta.__namecall = newcclosure(function(self, ...)
-    local method = getnamecallmethod()
-    local args = {...}
+-- Safe hooking function
+function GigaChadSpy.HookRemotes()
+    if GigaChadSpy.IsHooked then return end
     
-    if method == "FireServer" or method == "InvokeServer" then
-        local remoteType = method == "FireServer" and "Event" or "Function"
-        local remoteName = self.Name
+    local success, errorMsg = pcall(function()
+        local gameMeta = getrawmetatable(game)
+        if not gameMeta then return end
         
-        if GigaChadSpy.AutoBlock then
-            GigaChadSpy.BlockRemote(remoteName)
-        end
+        local oldNamecall = gameMeta.__namecall
         
-        if not GigaChadSpy.BlockedRemotes[remoteName] then
-            GigaChadSpy.AddRemote(remoteName, remoteType, "→", args, GigaChadSpy.GetPath(self))
-        end
-    end
-    
-    return oldNamecall(self, ...)
-end)
-
--- Also hook for incoming remotes from server
-local oldIndex = gameMeta.__index
-
-gameMeta.__index = newcclosure(function(self, key)
-    if key == "OnClientEvent" or key == "OnClientInvoke" then
-        local remoteType = key == "OnClientEvent" and "Event" and "Function"
-        local remoteName = self.Name
+        setreadonly(gameMeta, false)
         
-        return function(callback)
-            return oldIndex(self, key):Connect(function(...)
-                local args = {...}
+        gameMeta.__namecall = newcclosure(function(self, ...)
+            local method = getnamecallmethod()
+            local args = {...}
+            
+            if method == "FireServer" or method == "InvokeServer" then
+                local remoteType = method == "FireServer" and "Event" or "Function"
+                local remoteName = tostring(self.Name)
                 
-                if not GigaChadSpy.BlockedRemotes[remoteName] then
-                    GigaChadSpy.AddRemote(remoteName, remoteType, "←", args, GigaChadSpy.GetPath(self))
+                if GigaChadSpy.AutoBlock then
+                    GigaChadSpy.BlockRemote(remoteName)
                 end
                 
-                return callback(...)
-            end)
-        end
-    end
+                if not GigaChadSpy.BlockedRemotes[remoteName] then
+                    local path = GigaChadSpy.GetPath(self)
+                    GigaChadSpy.AddRemote(remoteName, remoteType, "→", args, path)
+                end
+            end
+            
+            return oldNamecall(self, ...)
+        end)
+        
+        setreadonly(gameMeta, true)
+        GigaChadSpy.IsHooked = true
+    end)
     
-    return oldIndex(self, key)
-end)
+    if not success then
+        warn("[GigaChad Spy] Hook error: " .. tostring(errorMsg))
+    end
+end
 
-setreadonly(gameMeta, true)
+-- UI Events with error handling
+local function SafeConnect(button, callback)
+    button.MouseButton1Click:Connect(function()
+        local success, err = pcall(callback)
+        if not success then
+            warn("[GigaChad Spy] UI Error: " .. tostring(err))
+        end
+    end)
+end
 
--- UI Events
-FloatingButton.MouseButton1Click:Connect(function()
+SafeConnect(FloatingButton, function()
     MainFrame.Visible = not MainFrame.Visible
+    if MainFrame.Visible and not GigaChadSpy.IsHooked then
+        GigaChadSpy.HookRemotes()
+    end
 end)
 
-CloseButton.MouseButton1Click:Connect(function()
+SafeConnect(CloseButton, function()
     MainFrame.Visible = false
 end)
 
-ClearLogsButton.MouseButton1Click:Connect(function()
+SafeConnect(ClearLogsButton, function()
     GigaChadSpy.ClearLogs()
 end)
 
-ClearBlocksButton.MouseButton1Click:Connect(function()
+SafeConnect(ClearBlocksButton, function()
     GigaChadSpy.ClearBlocks()
 end)
 
-AutoBlockButton.MouseButton1Click:Connect(function()
+SafeConnect(AutoBlockButton, function()
     GigaChadSpy.ToggleAutoBlock()
 end)
 
-CopyButton.MouseButton1Click:Connect(function()
+SafeConnect(CopyButton, function()
     GigaChadSpy.CopyCode()
 end)
 
-ReFireButton.MouseButton1Click:Connect(function()
+SafeConnect(ReFireButton, function()
     GigaChadSpy.ReFire()
 end)
 
-BlockButton.MouseButton1Click:Connect(function()
+SafeConnect(BlockButton, function()
     if GigaChadSpy.CurrentRemote then
         GigaChadSpy.BlockRemote(GigaChadSpy.CurrentRemote.Name)
+        if GigaChadSpy.CurrentRemote.Frame and GigaChadSpy.CurrentRemote.Frame:IsDescendantOf(LeftPanel) then
+            GigaChadSpy.CurrentRemote.Frame:Destroy()
+        end
     end
 end)
 
-DecompileButton.MouseButton1Click:Connect(function()
-    -- Decompile functionality would go here
-    print("Decompile feature - would show source script here")
+SafeConnect(DecompileButton, function()
+    -- Safe decompile placeholder
+    print("[GigaChad Spy] Decompile feature would show source script here")
 end)
 
--- Make UI draggable
-local dragging
-local dragInput
-local dragStart
-local startPos
+-- Make UI draggable with safe implementation
+local dragging = false
+local dragInput, dragStart, startPos
 
 local function update(input)
+    if not dragging then return end
+    
     local delta = input.Position - dragStart
-    MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    local newX = startPos.X.Offset + delta.X
+    local newY = startPos.Y.Offset + delta.Y
+    
+    -- Keep within screen bounds
+    newX = math.clamp(newX, 0, workspace.CurrentCamera.ViewportSize.X - MainFrame.AbsoluteSize.X)
+    newY = math.clamp(newY, 0, workspace.CurrentCamera.ViewportSize.Y - MainFrame.AbsoluteSize.Y)
+    
+    MainFrame.Position = UDim2.new(0, newX, 0, newY)
 end
 
 TopBar.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
         dragging = true
         dragStart = input.Position
         startPos = MainFrame.Position
@@ -587,18 +640,30 @@ end)
 
 -- Mobile optimization
 if game:GetService("UserInputService").TouchEnabled then
-    MainFrame.Size = UDim2.new(0.9, 0, 0.9, 0)
-    MainFrame.Position = UDim2.new(0.05, 0, 0.05, 0)
+    MainFrame.Size = UDim2.new(0.95, 0, 0.9, 0)
+    MainFrame.Position = UDim2.new(0.025, 0, 0.05, 0)
+    FloatingButton.Size = UDim2.new(0, 80, 0, 80)
     
-    -- Make text slightly larger for mobile
-    local textLabels = {
+    -- Adjust font sizes for mobile
+    local textElements = {
         Title, RemoteName, RemoteType, ReFireButton, CopyButton, 
         BlockButton, ClearLogsButton, ClearBlocksButton, AutoBlockButton, DecompileButton
     }
     
-    for _, label in ipairs(textLabels) do
-        label.TextSize = 18
+    for _, element in ipairs(textElements) do
+        if element:IsA("TextLabel") or element:IsA("TextButton") then
+            element.TextSize = 16
+        end
     end
 end
 
-print("GigaChad Spy loaded! Click the GCS button to open.")
+-- Initialize
+GigaChadSpy.HookRemotes()
+print("[GigaChad Spy] Loaded successfully! Click GCS button to open.")
+
+-- Auto-cleanup on game close
+game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui").ChildRemoved:Connect(function(child)
+    if child == GigaChadSpy then
+        GigaChadSpy.ClearLogs()
+    end
+end)
