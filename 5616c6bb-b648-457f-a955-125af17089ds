@@ -1,45 +1,51 @@
--- GigaChad Spy Ultimate Edition
--- Fully Working Remote Monitor
+-- GigaChad Spy - Ultra Stable Version
+-- Complete Remote Monitoring Solution
 
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local HttpService = game:GetService("HttpService")
-local CoreGui = game:GetService("CoreGui")
-local TweenService = game:GetService("TweenService")
+-- Safe service initialization
+local function getService(serviceName)
+    local success, service = pcall(function()
+        return game:GetService(serviceName)
+    end)
+    return success and service or nil
+end
+
+-- Initialize services with protection
+local Players = getService("Players")
+local RunService = getService("RunService")
+local HttpService = getService("HttpService")
+local CoreGui = getService("CoreGui")
+
+-- Check if we can run
+if not Players or not RunService then
+    warn("GigaChad Spy: Essential services not available")
+    return
+end
 
 local localPlayer = Players.LocalPlayer
+if not localPlayer then
+    warn("GigaChad Spy: Local player not found")
+    return
+end
 
--- Professional Dark Theme Colors
+-- Professional color scheme
 local COLORS = {
-    -- Background Colors
     BACKGROUND = Color3.fromRGB(13, 17, 23),
     CARD = Color3.fromRGB(22, 27, 34),
     SURFACE = Color3.fromRGB(33, 38, 45),
-    
-    -- Primary Colors
     PRIMARY = Color3.fromRGB(47, 129, 247),
     SUCCESS = Color3.fromRGB(46, 160, 67),
     WARNING = Color3.fromRGB(219, 154, 4),
     ERROR = Color3.fromRGB(218, 54, 51),
     ACCENT = Color3.fromRGB(158, 91, 255),
-    
-    -- Text Colors
     TEXT_PRIMARY = Color3.fromRGB(248, 250, 252),
-    TEXT_SECONDARY = Color3.fromRGB(139, 148, 158),
-    TEXT_TERTIARY = Color3.fromRGB(87, 96, 106),
-    
-    -- Remote Type Colors
-    EVENT_OUT = Color3.fromRGB(47, 129, 247),
-    EVENT_IN = Color3.fromRGB(36, 109, 227),
-    FUNCTION_OUT = Color3.fromRGB(158, 91, 255),
-    FUNCTION_IN = Color3.fromRGB(138, 71, 235)
+    TEXT_SECONDARY = Color3.fromRGB(139, 148, 158)
 }
 
 -- Configuration
-local MAX_LOGS = 150
-local AUTO_BLOCK_THRESHOLD = 5
+local MAX_LOGS = 100
+local AUTO_BLOCK_THRESHOLD = 3
 
--- Data Storage
+-- Data storage
 local spyData = {
     logs = {},
     blockedRemotes = {},
@@ -47,28 +53,33 @@ local spyData = {
     selectedLog = nil
 }
 
--- Safe Execution Wrapper
-local function safeCall(func, errorMessage, ...)
-    local success, result = pcall(func, ...)
+-- Ultra-safe function wrapper
+local function ultraSafeCall(func, errorMessage)
+    local success, result = pcall(func)
     if not success then
-        warn("[GigaChad Spy] " .. errorMessage .. ": " .. tostring(result))
+        warn("GigaChad Spy: " .. (errorMessage or "Unknown error") .. " - " .. tostring(result))
         return nil
     end
     return result
 end
 
--- Value Formatting
-local function formatValue(value, depth)
+-- Safe value formatting
+local function safeFormatValue(value, depth)
     depth = depth or 0
     if depth > 2 then return "..." end
     
-    local valueType = typeof(value)
+    if value == nil then return "nil" end
+    
+    local valueType = type(value)
+    if valueType == "userdata" then
+        valueType = typeof(value)
+    end
     
     if valueType == "table" then
         local parts = {}
         for k, v in pairs(value) do
-            if #parts < 5 then
-                table.insert(parts, string.format("[%s] = %s", formatValue(k, depth + 1), formatValue(v, depth + 1)))
+            if #parts < 3 then
+                table.insert(parts, string.format("[%s] = %s", safeFormatValue(k, depth + 1), safeFormatValue(v, depth + 1)))
             else
                 table.insert(parts, "...")
                 break
@@ -76,8 +87,8 @@ local function formatValue(value, depth)
         end
         return "{" .. table.concat(parts, ", ") .. "}"
     elseif valueType == "string" then
-        if #value > 40 then
-            return string.format("%q...", string.sub(value, 1, 40))
+        if #value > 30 then
+            return string.format("%q...", string.sub(value, 1, 30))
         end
         return string.format("%q", value)
     elseif valueType == "number" then
@@ -85,14 +96,10 @@ local function formatValue(value, depth)
     elseif valueType == "boolean" then
         return tostring(value)
     elseif valueType == "Vector3" then
-        return string.format("Vector3.new(%.2f, %.2f, %.2f)", value.X, value.Y, value.Z)
+        return string.format("Vector3.new(%.1f, %.1f, %.1f)", value.X, value.Y, value.Z)
     elseif valueType == "CFrame" then
         local x, y, z = value.Position.X, value.Position.Y, value.Position.Z
-        return string.format("CFrame.new(%.2f, %.2f, %.2f)", x, y, z)
-    elseif valueType == "Color3" then
-        return string.format("Color3.new(%.2f, %.2f, %.2f)", value.R, value.G, value.B)
-    elseif valueType == "Instance" then
-        return string.format('game:GetService("%s"):FindFirstChild("%s")', value.ClassName, value.Name)
+        return string.format("CFrame.new(%.1f, %.1f, %.1f)", x, y, z)
     elseif valueType == "nil" then
         return "nil"
     else
@@ -100,15 +107,18 @@ local function formatValue(value, depth)
     end
 end
 
--- Code Generation
-local function generateCode(remoteData)
-    if not remoteData then return "-- Select a remote to view code --" end
+-- Safe code generation
+local function safeGenerateCode(remoteData)
+    if not remoteData then return "-- Select a remote --" end
     
     local argsString = ""
-    if #remoteData.args > 0 then
+    if remoteData.args and #remoteData.args > 0 then
         local argStrings = {}
-        for i, arg in ipairs(remoteData.args) do
-            table.insert(argStrings, string.format("    [%d] = %s", i, formatValue(arg)))
+        for i = 1, math.min(#remoteData.args, 10) do
+            local arg = remoteData.args[i]
+            if arg ~= nil then
+                table.insert(argStrings, string.format("    [%d] = %s", i, safeFormatValue(arg)))
+            end
         end
         argsString = "local args = {\n" .. table.concat(argStrings, ",\n") .. "\n}"
     else
@@ -118,397 +128,355 @@ local function generateCode(remoteData)
     local callString = ""
     if remoteData.isFunction then
         if remoteData.direction == "out" then
-            callString = string.format('%s:InvokeServer(unpack(args))', remoteData.remotePath)
+            callString = string.format('%s:InvokeServer(unpack(args))', remoteData.remotePath or "unknown")
         else
-            callString = string.format('-- Incoming function: %s', remoteData.remotePath)
+            callString = string.format('-- Incoming function')
         end
     else
         if remoteData.direction == "out" then
-            callString = string.format('%s:FireServer(unpack(args))', remoteData.remotePath)
+            callString = string.format('%s:FireServer(unpack(args))', remoteData.remotePath or "unknown")
         else
-            callString = string.format('-- Incoming event: %s', remoteData.remotePath)
+            callString = string.format('-- Incoming event')
         end
     end
 
     return argsString .. "\n" .. callString
 end
 
--- UI Creation Functions
-local function createFrame(name, size, position, parent, color)
-    local frame = Instance.new("Frame")
-    frame.Name = name
-    frame.Size = size
-    frame.Position = position
-    frame.BackgroundColor3 = color or COLORS.CARD
-    frame.BorderSizePixel = 0
-    
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 8)
-    corner.Parent = frame
-    
-    if parent then
-        frame.Parent = parent
-    end
-    
-    return frame
+-- Safe UI creation functions
+local function safeCreateFrame(name, size, position, parent, color)
+    return ultraSafeCall(function()
+        local frame = Instance.new("Frame")
+        frame.Name = name or "Frame"
+        frame.Size = size or UDim2.new(0, 100, 0, 100)
+        frame.Position = position or UDim2.new(0, 0, 0, 0)
+        frame.BackgroundColor3 = color or COLORS.CARD
+        frame.BorderSizePixel = 0
+        
+        local corner = Instance.new("UICorner")
+        corner.CornerRadius = UDim.new(0, 6)
+        corner.Parent = frame
+        
+        if parent and typeof(parent) == "Instance" then
+            frame.Parent = parent
+        end
+        
+        return frame
+    end, "Create frame failed")
 end
 
-local function createButton(name, size, position, parent, text, color)
-    local button = Instance.new("TextButton")
-    button.Name = name
-    button.Size = size
-    button.Position = position
-    button.BackgroundColor3 = color or COLORS.PRIMARY
-    button.Text = text
-    button.TextColor3 = COLORS.TEXT_PRIMARY
-    button.TextSize = 14
-    button.Font = Enum.Font.Gotham
-    button.BorderSizePixel = 0
-    button.AutoButtonColor = false
-    
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 6)
-    corner.Parent = button
-    
-    -- Hover effects
-    local originalColor = button.BackgroundColor3
-    button.MouseEnter:Connect(function()
-        button.BackgroundColor3 = originalColor:Lerp(COLORS.TEXT_PRIMARY, 0.15)
-    end)
-    
-    button.MouseLeave:Connect(function()
-        button.BackgroundColor3 = originalColor
-    end)
-    
-    if parent then
-        button.Parent = parent
-    end
-    
-    return button
+local function safeCreateButton(name, size, position, parent, text, color)
+    return ultraSafeCall(function()
+        local button = Instance.new("TextButton")
+        button.Name = name or "Button"
+        button.Size = size or UDim2.new(0, 100, 0, 40)
+        button.Position = position or UDim2.new(0, 0, 0, 0)
+        button.BackgroundColor3 = color or COLORS.PRIMARY
+        button.Text = text or "Button"
+        button.TextColor3 = COLORS.TEXT_PRIMARY
+        button.TextSize = 14
+        button.Font = Enum.Font.Gotham
+        button.BorderSizePixel = 0
+        button.AutoButtonColor = false
+        
+        local corner = Instance.new("UICorner")
+        corner.CornerRadius = UDim.new(0, 6)
+        corner.Parent = button
+        
+        if parent and typeof(parent) == "Instance" then
+            button.Parent = parent
+        end
+        
+        return button
+    end, "Create button failed")
 end
 
-local function createLabel(name, size, position, parent, text, textSize)
-    local label = Instance.new("TextLabel")
-    label.Name = name
-    label.Size = size
-    label.Position = position
-    label.BackgroundTransparency = 1
-    label.Text = text
-    label.TextColor3 = COLORS.TEXT_PRIMARY
-    label.TextSize = textSize or 14
-    label.Font = Enum.Font.Gotham
-    label.TextXAlignment = Enum.TextXAlignment.Left
-    label.TextWrapped = true
-    
-    if parent then
-        label.Parent = parent
-    end
-    
-    return label
+local function safeCreateLabel(name, size, position, parent, text, textSize)
+    return ultraSafeCall(function()
+        local label = Instance.new("TextLabel")
+        label.Name = name or "Label"
+        label.Size = size or UDim2.new(0, 100, 0, 40)
+        label.Position = position or UDim2.new(0, 0, 0, 0)
+        label.BackgroundTransparency = 1
+        label.Text = text or "Label"
+        label.TextColor3 = COLORS.TEXT_PRIMARY
+        label.TextSize = textSize or 14
+        label.Font = Enum.Font.Gotham
+        label.TextXAlignment = Enum.TextXAlignment.Left
+        label.TextWrapped = true
+        
+        if parent and typeof(parent) == "Instance" then
+            label.Parent = parent
+        end
+        
+        return label
+    end, "Create label failed")
 end
 
-local function createScrollingFrame(name, size, position, parent)
-    local frame = Instance.new("ScrollingFrame")
-    frame.Name = name
-    frame.Size = size
-    frame.Position = position
-    frame.BackgroundColor3 = COLORS.BACKGROUND
-    frame.BackgroundTransparency = 1
-    frame.ScrollBarThickness = 4
-    frame.ScrollBarImageColor3 = COLORS.PRIMARY
-    frame.BorderSizePixel = 0
-    
-    if parent then
-        frame.Parent = parent
-    end
-    
-    return frame
-end
-
--- Main GUI Creation
+-- Main GUI creation
 local function createMainGUI()
-    local screenGui = Instance.new("ScreenGui")
-    screenGui.Name = "GigaChadSpy"
-    screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-    screenGui.ResetOnSpawn = false
-    
-    -- Use CoreGui for reliability
-    if RunService:IsRunning() then
-        screenGui.Parent = CoreGui
-    else
-        screenGui.Parent = localPlayer:WaitForChild("PlayerGui")
-    end
+    return ultraSafeCall(function()
+        local screenGui = Instance.new("ScreenGui")
+        screenGui.Name = "GigaChadSpy"
+        screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+        screenGui.ResetOnSpawn = false
+        
+        if CoreGui then
+            screenGui.Parent = CoreGui
+        else
+            local playerGui = localPlayer:WaitForChild("PlayerGui")
+            screenGui.Parent = playerGui
+        end
 
-    -- Floating Activation Button
-    local floatButton = createButton(
-        "FloatButton",
-        UDim2.new(0, 70, 0, 70),
-        UDim2.new(0, 20, 0.5, -35),
-        screenGui,
-        "SPY",
-        COLORS.PRIMARY
-    )
-    floatButton.Visible = true
-
-    -- Main Window
-    local mainFrame = createFrame(
-        "MainFrame",
-        UDim2.new(0.92, 0, 0.88, 0),
-        UDim2.new(0.04, 0, 0.06, 0),
-        screenGui,
-        COLORS.BACKGROUND
-    )
-    mainFrame.Visible = false
-
-    -- Header
-    local header = createFrame(
-        "Header",
-        UDim2.new(1, 0, 0, 50),
-        UDim2.new(0, 0, 0, 0),
-        mainFrame,
-        COLORS.SURFACE
-    )
-
-    local title = createLabel(
-        "Title",
-        UDim2.new(0.7, 0, 1, 0),
-        UDim2.new(0, 15, 0, 0),
-        header,
-        "GIGACHAD SPY",
-        18
-    )
-    title.Font = Enum.Font.GothamBold
-
-    local closeButton = createButton(
-        "CloseButton",
-        UDim2.new(0, 40, 0, 40),
-        UDim2.new(1, -50, 0.5, -20),
-        header,
-        "×",
-        COLORS.ERROR
-    )
-    closeButton.TextSize = 20
-
-    -- Content Area
-    local contentFrame = createFrame(
-        "ContentFrame",
-        UDim2.new(1, -20, 1, -70),
-        UDim2.new(0, 10, 0, 60),
-        mainFrame,
-        COLORS.BACKGROUND
-    )
-    contentFrame.BackgroundTransparency = 1
-
-    -- Left Panel - Remote List
-    local leftPanel = createFrame(
-        "LeftPanel",
-        UDim2.new(0.4, 0, 1, 0),
-        UDim2.new(0, 0, 0, 0),
-        contentFrame,
-        COLORS.SURFACE
-    )
-
-    local listHeader = createFrame(
-        "ListHeader",
-        UDim2.new(1, 0, 0, 40),
-        UDim2.new(0, 0, 0, 0),
-        leftPanel,
-        COLORS.CARD
-    )
-
-    createLabel(
-        "ListTitle",
-        UDim2.new(1, -10, 1, 0),
-        UDim2.new(0, 10, 0, 0),
-        listHeader,
-        "ACTIVE REMOTES",
-        14
-    )
-
-    local remotesList = createScrollingFrame(
-        "RemotesList",
-        UDim2.new(1, 0, 1, -80),
-        UDim2.new(0, 0, 0, 45),
-        leftPanel
-    )
-
-    local listLayout = Instance.new("UIListLayout")
-    listLayout.Padding = UDim.new(0, 8)
-    listLayout.Parent = remotesList
-
-    -- Right Panel - Code & Controls
-    local rightPanel = createFrame(
-        "RightPanel",
-        UDim2.new(0.58, 0, 1, 0),
-        UDim2.new(0.42, 0, 0, 0),
-        contentFrame,
-        COLORS.SURFACE
-    )
-
-    local codeHeader = createFrame(
-        "CodeHeader",
-        UDim2.new(1, 0, 0, 40),
-        UDim2.new(0, 0, 0, 0),
-        rightPanel,
-        COLORS.CARD
-    )
-
-    createLabel(
-        "CodeTitle",
-        UDim2.new(1, -10, 1, 0),
-        UDim2.new(0, 10, 0, 0),
-        codeHeader,
-        "GENERATED CODE",
-        14
-    )
-
-    local codeContainer = createFrame(
-        "CodeContainer",
-        UDim2.new(1, -10, 0.55, -10),
-        UDim2.new(0, 5, 0, 45),
-        rightPanel,
-        COLORS.BACKGROUND
-    )
-
-    local codeBox = createScrollingFrame(
-        "CodeBox",
-        UDim2.new(1, -10, 1, -10),
-        UDim2.new(0, 5, 0, 5),
-        codeContainer
-    )
-
-    local codeText = createLabel(
-        "CodeText",
-        UDim2.new(1, 0, 0, 0),
-        UDim2.new(0, 0, 0, 0),
-        codeBox,
-        "-- Select a remote to view code --",
-        13
-    )
-    codeText.Size = UDim2.new(1, 0, 0, 0)
-    codeText.AutomaticSize = Enum.AutomaticSize.Y
-    codeText.TextYAlignment = Enum.TextYAlignment.Top
-
-    -- Control Panel
-    local controlPanel = createFrame(
-        "ControlPanel",
-        UDim2.new(1, -10, 0.4, -10),
-        UDim2.new(0, 5, 0.55, 5),
-        rightPanel,
-        COLORS.CARD
-    )
-
-    local controlGrid = Instance.new("UIGridLayout")
-    controlGrid.CellSize = UDim2.new(0.5, -8, 0.33, -8)
-    controlGrid.CellPadding = UDim2.new(0, 6, 0, 6)
-    controlGrid.Parent = controlPanel
-
-    -- Control Buttons
-    local controls = {
-        {Name = "Execute", Text = "Execute", Color = COLORS.SUCCESS},
-        {Name = "Copy", Text = "Copy", Color = COLORS.PRIMARY},
-        {Name = "Block", Text = "Block", Color = COLORS.ERROR},
-        {Name = "Info", Text = "Info", Color = COLORS.ACCENT},
-        {Name = "Clear", Text = "Clear", Color = COLORS.WARNING},
-        {Name = "UnblockAll", Text = "Unblock All", Color = COLORS.SUCCESS}
-    }
-
-    for _, control in pairs(controls) do
-        createButton(
-            control.Name,
-            UDim2.new(1, 0, 1, 0),
-            UDim2.new(0, 0, 0, 0),
-            controlPanel,
-            control.Text,
-            control.Color
+        -- Floating button
+        local floatButton = safeCreateButton(
+            "FloatButton",
+            UDim2.new(0, 60, 0, 60),
+            UDim2.new(0, 20, 0.5, -30),
+            screenGui,
+            "SPY",
+            COLORS.PRIMARY
         )
-    end
+        
+        if not floatButton then return nil end
+        floatButton.Visible = true
 
-    -- Status Bar
-    local statusBar = createFrame(
-        "StatusBar",
-        UDim2.new(1, 0, 0, 30),
-        UDim2.new(0, 0, 1, -30),
-        leftPanel,
-        COLORS.CARD
-    )
+        -- Main window
+        local mainFrame = safeCreateFrame(
+            "MainFrame",
+            UDim2.new(0.9, 0, 0.85, 0),
+            UDim2.new(0.05, 0, 0.075, 0),
+            screenGui,
+            COLORS.BACKGROUND
+        )
+        
+        if not mainFrame then return nil end
+        mainFrame.Visible = false
 
-    local statusLabel = createLabel(
-        "StatusLabel",
-        UDim2.new(1, -10, 1, 0),
-        UDim2.new(0, 10, 0, 0),
-        statusBar,
-        "Ready | Logs: 0 | Blocked: 0",
-        12
-    )
-    statusLabel.TextColor3 = COLORS.TEXT_SECONDARY
+        -- Header
+        local header = safeCreateFrame(
+            "Header",
+            UDim2.new(1, 0, 0, 50),
+            UDim2.new(0, 0, 0, 0),
+            mainFrame,
+            COLORS.SURFACE
+        )
+        
+        local title = safeCreateLabel(
+            "Title",
+            UDim2.new(0.7, 0, 1, 0),
+            UDim2.new(0, 15, 0, 0),
+            header,
+            "GIGACHAD SPY",
+            16
+        )
+        
+        local closeButton = safeCreateButton(
+            "CloseButton",
+            UDim2.new(0, 40, 0, 40),
+            UDim2.new(1, -50, 0.5, -20),
+            header,
+            "X",
+            COLORS.ERROR
+        )
 
-    return {
-        ScreenGui = screenGui,
-        MainFrame = mainFrame,
-        FloatButton = floatButton,
-        CloseButton = closeButton,
-        RemotesList = remotesList,
-        CodeText = codeText,
-        ControlPanel = controlPanel,
-        StatusLabel = statusLabel
-    }
+        -- Content area
+        local contentFrame = safeCreateFrame(
+            "ContentFrame",
+            UDim2.new(1, -20, 1, -70),
+            UDim2.new(0, 10, 0, 60),
+            mainFrame,
+            COLORS.BACKGROUND
+        )
+        
+        if contentFrame then
+            contentFrame.BackgroundTransparency = 1
+        end
+
+        -- Left panel - Remote list
+        local leftPanel = safeCreateFrame(
+            "LeftPanel",
+            UDim2.new(0.4, 0, 1, 0),
+            UDim2.new(0, 0, 0, 0),
+            contentFrame,
+            COLORS.SURFACE
+        )
+        
+        local listHeader = safeCreateFrame(
+            "ListHeader",
+            UDim2.new(1, 0, 0, 40),
+            UDim2.new(0, 0, 0, 0),
+            leftPanel,
+            COLORS.CARD
+        )
+        
+        safeCreateLabel(
+            "ListTitle",
+            UDim2.new(1, -10, 1, 0),
+            UDim2.new(0, 10, 0, 0),
+            listHeader,
+            "REMOTES",
+            14
+        )
+        
+        local remotesList = Instance.new("ScrollingFrame")
+        remotesList.Name = "RemotesList"
+        remotesList.Size = UDim2.new(1, 0, 1, -80)
+        remotesList.Position = UDim2.new(0, 0, 0, 45)
+        remotesList.BackgroundColor3 = COLORS.SURFACE
+        remotesList.BackgroundTransparency = 1
+        remotesList.ScrollBarThickness = 4
+        remotesList.ScrollBarImageColor3 = COLORS.PRIMARY
+        remotesList.BorderSizePixel = 0
+        
+        if leftPanel then
+            remotesList.Parent = leftPanel
+        end
+        
+        local listLayout = Instance.new("UIListLayout")
+        listLayout.Padding = UDim.new(0, 8)
+        listLayout.Parent = remotesList
+
+        -- Right panel - Code and controls
+        local rightPanel = safeCreateFrame(
+            "RightPanel",
+            UDim2.new(0.58, 0, 1, 0),
+            UDim2.new(0.42, 0, 0, 0),
+            contentFrame,
+            COLORS.SURFACE
+        )
+        
+        local codeHeader = safeCreateFrame(
+            "CodeHeader",
+            UDim2.new(1, 0, 0, 40),
+            UDim2.new(0, 0, 0, 0),
+            rightPanel,
+            COLORS.CARD
+        )
+        
+        safeCreateLabel(
+            "CodeTitle",
+            UDim2.new(1, -10, 1, 0),
+            UDim2.new(0, 10, 0, 0),
+            codeHeader,
+            "CODE",
+            14
+        )
+        
+        local codeContainer = safeCreateFrame(
+            "CodeContainer",
+            UDim2.new(1, -10, 0.55, -10),
+            UDim2.new(0, 5, 0, 45),
+            rightPanel,
+            COLORS.BACKGROUND
+        )
+        
+        local codeBox = Instance.new("ScrollingFrame")
+        codeBox.Name = "CodeBox"
+        codeBox.Size = UDim2.new(1, -10, 1, -10)
+        codeBox.Position = UDim2.new(0, 5, 0, 5)
+        codeBox.BackgroundTransparency = 1
+        codeBox.ScrollBarThickness = 4
+        codeBox.ScrollBarImageColor3 = COLORS.PRIMARY
+        codeBox.BorderSizePixel = 0
+        
+        if codeContainer then
+            codeBox.Parent = codeContainer
+        end
+        
+        local codeText = safeCreateLabel(
+            "CodeText",
+            UDim2.new(1, 0, 0, 0),
+            UDim2.new(0, 0, 0, 0),
+            codeBox,
+            "-- Select remote --",
+            13
+        )
+        
+        if codeText then
+            codeText.Size = UDim2.new(1, 0, 0, 0)
+            codeText.AutomaticSize = Enum.AutomaticSize.Y
+            codeText.TextYAlignment = Enum.TextYAlignment.Top
+        end
+
+        -- Control panel
+        local controlPanel = safeCreateFrame(
+            "ControlPanel",
+            UDim2.new(1, -10, 0.4, -10),
+            UDim2.new(0, 5, 0.55, 5),
+            rightPanel,
+            COLORS.CARD
+        )
+        
+        local controlGrid = Instance.new("UIGridLayout")
+        controlGrid.CellSize = UDim2.new(0.5, -8, 0.33, -8)
+        controlGrid.CellPadding = UDim2.new(0, 6, 0, 6)
+        
+        if controlPanel then
+            controlGrid.Parent = controlPanel
+        end
+
+        -- Control buttons
+        local controls = {
+            {Name = "Execute", Text = "Execute", Color = COLORS.SUCCESS},
+            {Name = "Copy", Text = "Copy", Color = COLORS.PRIMARY},
+            {Name = "Block", Text = "Block", Color = COLORS.ERROR},
+            {Name = "Info", Text = "Info", Color = COLORS.ACCENT},
+            {Name = "Clear", Text = "Clear", Color = COLORS.WARNING},
+            {Name = "UnblockAll", Text = "Unblock", Color = COLORS.SUCCESS}
+        }
+
+        for _, control in pairs(controls) do
+            safeCreateButton(
+                control.Name,
+                UDim2.new(1, 0, 1, 0),
+                UDim2.new(0, 0, 0, 0),
+                controlPanel,
+                control.Text,
+                control.Color
+            )
+        end
+
+        -- Status bar
+        local statusBar = safeCreateFrame(
+            "StatusBar",
+            UDim2.new(1, 0, 0, 30),
+            UDim2.new(0, 0, 1, -30),
+            leftPanel,
+            COLORS.CARD
+        )
+        
+        local statusLabel = safeCreateLabel(
+            "StatusLabel",
+            UDim2.new(1, -10, 1, 0),
+            UDim2.new(0, 10, 0, 0),
+            statusBar,
+            "Ready | Logs: 0",
+            12
+        )
+        
+        if statusLabel then
+            statusLabel.TextColor3 = COLORS.TEXT_SECONDARY
+        end
+
+        return {
+            ScreenGui = screenGui,
+            MainFrame = mainFrame,
+            FloatButton = floatButton,
+            CloseButton = closeButton,
+            RemotesList = remotesList,
+            CodeText = codeText,
+            ControlPanel = controlPanel,
+            StatusLabel = statusLabel
+        }
+    end, "Main GUI creation failed")
 end
 
--- Hook System (Simplified and Safe)
-local function initializeHooks()
-    return safeCall(function()
-        -- Hook outgoing remote calls using namecall
-        local mt = getrawmetatable(game)
-        if not mt then
-            return false
-        end
-        
-        local oldNamecall = mt.__namecall
-        
-        if oldNamecall then
-            mt.__namecall = newcclosure(function(self, ...)
-                local method = getnamecallmethod()
-                local args = {...}
-                
-                -- Check if this is a remote call
-                if (method == "FireServer" or method == "InvokeServer") and 
-                   (self.ClassName == "RemoteEvent" or self.ClassName == "RemoteFunction") then
-                    
-                    local remotePath = self:GetFullName()
-                    
-                    if not spyData.blockedRemotes[remotePath] then
-                        local logEntry = {
-                            remote = self,
-                            remotePath = remotePath,
-                            args = args,
-                            isFunction = method == "InvokeServer",
-                            direction = "out",
-                            timestamp = tick(),
-                            callId = HttpService:GenerateGUID(false)
-                        }
-                        
-                        table.insert(spyData.logs, 1, logEntry)
-                        
-                        -- Auto-blocking
-                        spyData.autoBlockCount[remotePath] = (spyData.autoBlockCount[remotePath] or 0) + 1
-                        if spyData.autoBlockCount[remotePath] >= AUTO_BLOCK_THRESHOLD then
-                            spyData.blockedRemotes[remotePath] = true
-                        end
-                        
-                        -- Limit logs
-                        if #spyData.logs > MAX_LOGS then
-                            table.remove(spyData.logs, #spyData.logs)
-                        end
-                    end
-                end
-                
-                return oldNamecall(self, ...)
-            end)
-        end
-        
-        -- Hook incoming events safely
-        local function hookIncomingRemote(remote)
+-- Simple hook system
+local function initializeSimpleHooks()
+    return ultraSafeCall(function()
+        -- Hook incoming events only (most reliable)
+        local function hookRemote(remote)
             if remote:IsA("RemoteEvent") then
                 remote.OnClientEvent:Connect(function(...)
                     local args = {...}
@@ -521,20 +489,19 @@ local function initializeHooks()
                             args = args,
                             isFunction = false,
                             direction = "in",
-                            timestamp = tick(),
-                            callId = HttpService:GenerateGUID(false)
+                            timestamp = tick()
                         }
                         
                         table.insert(spyData.logs, 1, logEntry)
                         
                         if #spyData.logs > MAX_LOGS then
-                            table.remove(spyData.logs, #spyData.logs)
+                            table.remove(spyData.logs)
                         end
                     end
                 end)
             elseif remote:IsA("RemoteFunction") then
-                local oldOnClientInvoke = remote.OnClientInvoke
-                if oldOnClientInvoke then
+                local oldInvoke = remote.OnClientInvoke
+                if oldInvoke then
                     remote.OnClientInvoke = function(...)
                         local args = {...}
                         local remotePath = remote:GetFullName()
@@ -546,55 +513,57 @@ local function initializeHooks()
                                 args = args,
                                 isFunction = true,
                                 direction = "in",
-                                timestamp = tick(),
-                                callId = HttpService:GenerateGUID(false)
+                                timestamp = tick()
                             }
                             
                             table.insert(spyData.logs, 1, logEntry)
                             
                             if #spyData.logs > MAX_LOGS then
-                                table.remove(spyData.logs, #spyData.logs)
+                                table.remove(spyData.logs)
                             end
                         end
                         
-                        return oldOnClientInvoke(...)
+                        return oldInvoke(...)
                     end
                 end
             end
         end
-        
+
         -- Hook existing remotes
-        local function hookExistingRemotes(parent)
+        local function scanForRemotes(parent)
             for _, child in pairs(parent:GetChildren()) do
                 if child:IsA("RemoteEvent") or child:IsA("RemoteFunction") then
-                    hookIncomingRemote(child)
+                    hookRemote(child)
                 end
-                hookExistingRemotes(child)
+                scanForRemotes(child)
             end
         end
         
-        hookExistingRemotes(game)
+        scanForRemotes(game)
         
         -- Hook new remotes
         game.DescendantAdded:Connect(function(descendant)
             if descendant:IsA("RemoteEvent") or descendant:IsA("RemoteFunction") then
-                task.wait(0.1) -- Small delay for stability
-                hookIncomingRemote(descendant)
+                task.wait(0.1)
+                hookRemote(descendant)
             end
         end)
         
         return true
-    end, "Hook initialization failed") or false
+    end, "Hook initialization failed")
 end
 
--- Action Functions
-local function executeRemote(remoteData)
-    if not remoteData then return false, "No remote selected" end
+-- Action functions
+local function safeExecuteRemote(remoteData)
+    if not remoteData then return false, "No remote data" end
+    if not remoteData.remote then return false, "Remote instance missing" end
     
-    return safeCall(function()
+    return ultraSafeCall(function()
         local args = {}
-        for i, arg in ipairs(remoteData.args) do
-            args[i] = arg
+        if remoteData.args then
+            for i, arg in ipairs(remoteData.args) do
+                args[i] = arg
+            end
         end
         
         if remoteData.isFunction then
@@ -606,7 +575,7 @@ local function executeRemote(remoteData)
         else
             if remoteData.direction == "out" then
                 remoteData.remote:FireServer(unpack(args))
-                return true, "Executed successfully"
+                return true, "Executed"
             else
                 return false, "Cannot execute incoming event"
             end
@@ -614,11 +583,12 @@ local function executeRemote(remoteData)
     end, "Remote execution failed")
 end
 
-local function toggleBlockRemote(remotePath)
-    return safeCall(function()
+local function safeToggleBlock(remotePath)
+    if not remotePath then return false end
+    
+    return ultraSafeCall(function()
         if spyData.blockedRemotes[remotePath] then
             spyData.blockedRemotes[remotePath] = nil
-            spyData.autoBlockCount[remotePath] = nil
             return false
         else
             spyData.blockedRemotes[remotePath] = true
@@ -627,239 +597,221 @@ local function toggleBlockRemote(remotePath)
     end, "Block toggle failed") or false
 end
 
-local function getRemoteInfo(remoteData)
-    return safeCall(function()
-        return string.format("Path: %s\nType: %s\nDirection: %s\nTime: %.3f\nArgs: %d",
-            remoteData.remotePath,
-            remoteData.isFunction and "Function" or "Event",
-            remoteData.direction,
-            remoteData.timestamp,
-            #remoteData.args
-        )
-    end, "Info retrieval failed") or "Error getting information"
-end
-
--- GUI Update Function
-local function updateGUI(guiElements)
-    return safeCall(function()
+-- GUI update
+local function safeUpdateGUI(guiElements)
+    if not guiElements then return false end
+    
+    return ultraSafeCall(function()
         local remotesList = guiElements.RemotesList
         local codeText = guiElements.CodeText
         local statusLabel = guiElements.StatusLabel
         
-        -- Clear existing list
+        if not remotesList or not codeText or not statusLabel then
+            return false
+        end
+
+        -- Clear list
         for _, child in pairs(remotesList:GetChildren()) do
             if child:IsA("Frame") then
                 child:Destroy()
             end
         end
 
-        -- Add remote entries
+        -- Add remotes
         for i, logEntry in ipairs(spyData.logs) do
-            local remoteCard = createFrame(
-                "RemoteCard_" .. i,
-                UDim2.new(1, -8, 0, 65),
-                UDim2.new(0, 4, 0, (i-1)*73),
+            local card = safeCreateFrame(
+                "Card_" .. i,
+                UDim2.new(1, -8, 0, 60),
+                UDim2.new(0, 4, 0, (i-1)*68),
                 remotesList,
                 COLORS.CARD
             )
             
-            -- Set card color based on type
-            local cardColor = logEntry.direction == "out" and 
-                             (logEntry.isFunction and COLORS.FUNCTION_OUT or COLORS.EVENT_OUT) or
-                             (logEntry.isFunction and COLORS.FUNCTION_IN or COLORS.EVENT_IN)
-            
-            remoteCard.BackgroundColor3 = cardColor
-
-            -- Remote path
-            local pathText = logEntry.remotePath
-            if #pathText > 30 then
-                pathText = "..." .. string.sub(pathText, -27)
-            end
-            
-            createLabel(
-                "PathLabel",
-                UDim2.new(0.8, 0, 0.5, 0),
-                UDim2.new(0, 8, 0, 5),
-                remoteCard,
-                pathText,
-                12
-            )
-
-            -- Info line
-            local infoText = string.format("%s • %s • %d args",
-                logEntry.isFunction and "FUNC" : "EVENT",
-                logEntry.direction:upper(),
-                #logEntry.args
-            )
-            
-            createLabel(
-                "InfoLabel",
-                UDim2.new(0.8, 0, 0.4, 0),
-                UDim2.new(0, 8, 0.5, 0),
-                remoteCard,
-                infoText,
-                10
-            ).TextColor3 = COLORS.TEXT_SECONDARY
-
-            -- Block indicator
-            if spyData.blockedRemotes[logEntry.remotePath] then
-                local blockIndicator = createFrame(
-                    "BlockIndicator",
-                    UDim2.new(0, 8, 0, 8),
-                    UDim2.new(1, -14, 0, 8),
-                    remoteCard,
-                    COLORS.ERROR
-                )
-            end
-
-            -- Click handler
-            remoteCard.MouseButton1Click:Connect(function()
-                spyData.selectedLog = logEntry
-                local code = generateCode(logEntry)
-                codeText.Text = code
-                
-                -- Update block button
-                local blockButton = guiElements.ControlPanel:FindFirstChild("Block")
-                if blockButton then
-                    local isBlocked = spyData.blockedRemotes[logEntry.remotePath]
-                    blockButton.Text = isBlocked and "Unblock" : "Block"
-                    blockButton.BackgroundColor3 = isBlocked and COLORS.SUCCESS or COLORS.ERROR
+            if card then
+                -- Path
+                local path = logEntry.remotePath or "unknown"
+                if #path > 25 then
+                    path = "..." .. string.sub(path, -22)
                 end
-            end)
+                
+                safeCreateLabel(
+                    "Path",
+                    UDim2.new(0.8, 0, 0.5, 0),
+                    UDim2.new(0, 8, 0, 5),
+                    card,
+                    path,
+                    12
+                )
+                
+                -- Info
+                local info = string.format("%s • %s • %d args",
+                    logEntry.isFunction and "FUNC" or "EVENT",
+                    logEntry.direction or "unknown",
+                    logEntry.args and #logEntry.args or 0
+                )
+                
+                safeCreateLabel(
+                    "Info",
+                    UDim2.new(0.8, 0, 0.4, 0),
+                    UDim2.new(0, 8, 0.5, 0),
+                    card,
+                    info,
+                    10
+                )
+                
+                -- Block indicator
+                if logEntry.remotePath and spyData.blockedRemotes[logEntry.remotePath] then
+                    local indicator = safeCreateFrame(
+                        "Blocked",
+                        UDim2.new(0, 8, 0, 8),
+                        UDim2.new(1, -14, 0, 8),
+                        card,
+                        COLORS.ERROR
+                    )
+                end
+                
+                -- Click handler
+                card.MouseButton1Click:Connect(function()
+                    spyData.selectedLog = logEntry
+                    if codeText then
+                        codeText.Text = safeGenerateCode(logEntry)
+                    end
+                end)
+            end
         end
         
-        -- Update scroll size
-        remotesList.CanvasSize = UDim2.new(0, 0, 0, #spyData.logs * 73)
+        -- Update scroll
+        if remotesList then
+            remotesList.CanvasSize = UDim2.new(0, 0, 0, #spyData.logs * 68)
+        end
         
         -- Update status
-        local blockedCount = 0
-        for _ in pairs(spyData.blockedRemotes) do
-            blockedCount = blockedCount + 1
+        if statusLabel then
+            local blocked = 0
+            for _ in pairs(spyData.blockedRemotes) do
+                blocked = blocked + 1
+            end
+            statusLabel.Text = string.format("Logs: %d | Blocked: %d", #spyData.logs, blocked)
         end
-        
-        statusLabel.Text = string.format("Monitoring | Logs: %d | Blocked: %d", #spyData.logs, blockedCount)
         
         return true
     end, "GUI update failed") or false
 end
 
--- Main Initialization
+-- Main initialization
 local function initializeSpy()
-    print("[GigaChad Spy] Initializing...")
+    print("GigaChad Spy: Starting...")
     
     local guiElements = createMainGUI()
     if not guiElements then
         error("Failed to create GUI")
-        return
+        return false
     end
 
-    -- Safe control connection
-    local function connectControl(buttonName, callback)
-        local button = guiElements.ControlPanel:FindFirstChild(buttonName)
-        if button then
+    -- Safe event connections
+    local function safeConnect(button, callback)
+        if button and typeof(button) == "Instance" and button:IsA("TextButton") then
             button.MouseButton1Click:Connect(function()
-                safeCall(callback, "Control failed: " .. buttonName)
+                ultraSafeCall(callback, "Button callback failed")
             end)
         end
     end
 
-    -- UI Event Handlers
-    guiElements.FloatButton.MouseButton1Click:Connect(function()
-        guiElements.MainFrame.Visible = not guiElements.MainFrame.Visible
-        guiElements.FloatButton.Visible = not guiElements.MainFrame.Visible
+    -- UI events
+    safeConnect(guiElements.FloatButton, function()
+        if guiElements.MainFrame then
+            guiElements.MainFrame.Visible = not guiElements.MainFrame.Visible
+        end
+        if guiElements.FloatButton then
+            guiElements.FloatButton.Visible = not guiElements.MainFrame.Visible
+        end
     end)
 
-    guiElements.CloseButton.MouseButton1Click:Connect(function()
-        guiElements.MainFrame.Visible = false
-        guiElements.FloatButton.Visible = true
+    safeConnect(guiElements.CloseButton, function()
+        if guiElements.MainFrame then
+            guiElements.MainFrame.Visible = false
+        end
+        if guiElements.FloatButton then
+            guiElements.FloatButton.Visible = true
+        end
     end)
 
-    -- Control Handlers
-    connectControl("Execute", function()
-        if spyData.selectedLog then
-            local success, result = executeRemote(spyData.selectedLog)
-            if success then
-                guiElements.CodeText.Text = generateCode(spyData.selectedLog) .. "\n\n✅ Execution successful"
-                if result ~= nil and result ~= true then
-                    guiElements.CodeText.Text = guiElements.CodeText.Text .. "\nReturn: " .. formatValue(result)
+    -- Control buttons
+    local controls = {
+        Execute = function()
+            if spyData.selectedLog then
+                local success, result = safeExecuteRemote(spyData.selectedLog)
+                if success then
+                    guiElements.CodeText.Text = safeGenerateCode(spyData.selectedLog) .. "\n\n✅ Success"
+                else
+                    guiElements.CodeText.Text = safeGenerateCode(spyData.selectedLog) .. "\n\n❌ " .. tostring(result)
                 end
-            else
-                guiElements.CodeText.Text = generateCode(spyData.selectedLog) .. "\n\n❌ Execution failed: " .. tostring(result)
             end
-        end
-    end)
-
-    connectControl("Copy", function()
-        if spyData.selectedLog then
-            local code = generateCode(spyData.selectedLog)
-            if setclipboard then
-                setclipboard(code)
-                guiElements.CodeText.Text = code .. "\n\n✅ Code copied"
-            else
-                guiElements.CodeText.Text = code .. "\n\n❌ Clipboard unavailable"
+        end,
+        
+        Copy = function()
+            if spyData.selectedLog then
+                local code = safeGenerateCode(spyData.selectedLog)
+                if setclipboard then
+                    setclipboard(code)
+                    guiElements.CodeText.Text = code .. "\n\n✅ Copied"
+                else
+                    guiElements.CodeText.Text = code .. "\n\n❌ No clipboard"
+                end
             end
-        end
-    end)
-
-    connectControl("Block", function()
-        if spyData.selectedLog then
-            local isBlocked = toggleBlockRemote(spyData.selectedLog.remotePath)
-            local blockButton = guiElements.ControlPanel:FindFirstChild("Block")
-            if blockButton then
-                blockButton.Text = isBlocked and "Unblock" : "Block"
-                blockButton.BackgroundColor3 = isBlocked and COLORS.SUCCESS or COLORS.ERROR
+        end,
+        
+        Block = function()
+            if spyData.selectedLog and spyData.selectedLog.remotePath then
+                local isBlocked = safeToggleBlock(spyData.selectedLog.remotePath)
+                guiElements.CodeText.Text = safeGenerateCode(spyData.selectedLog) .. 
+                    (isBlocked and "\n\n✅ Blocked" or "\n\n✅ Unblocked")
             end
-            guiElements.CodeText.Text = generateCode(spyData.selectedLog) .. 
-                           (isBlocked and "\n\n✅ Remote blocked" : "\n\n✅ Remote unblocked")
-        end
-    end)
-
-    connectControl("Info", function()
-        if spyData.selectedLog then
-            local info = getRemoteInfo(spyData.selectedLog)
-            guiElements.CodeText.Text = "📊 REMOTE INFORMATION\n" .. info .. "\n\n" .. generateCode(spyData.selectedLog)
-        end
-    end)
-
-    connectControl("Clear", function()
-        spyData.logs = {}
-        spyData.selectedLog = nil
-        guiElements.CodeText.Text = "-- Select a remote to view code --"
-        updateGUI(guiElements)
-    end)
-
-    connectControl("UnblockAll", function()
-        spyData.blockedRemotes = {}
-        spyData.autoBlockCount = {}
-        if spyData.selectedLog then
-            local blockButton = guiElements.ControlPanel:FindFirstChild("Block")
-            if blockButton then
-                blockButton.Text = "Block"
-                blockButton.BackgroundColor3 = COLORS.ERROR
+        end,
+        
+        Info = function()
+            if spyData.selectedLog then
+                local info = string.format("Path: %s\nType: %s\nDirection: %s\nTime: %.2f",
+                    spyData.selectedLog.remotePath or "unknown",
+                    spyData.selectedLog.isFunction and "Function" or "Event", 
+                    spyData.selectedLog.direction or "unknown",
+                    spyData.selectedLog.timestamp or 0
+                )
+                guiElements.CodeText.Text = "ℹ️ INFO\n" .. info .. "\n\n" .. safeGenerateCode(spyData.selectedLog)
             end
+        end,
+        
+        Clear = function()
+            spyData.logs = {}
+            spyData.selectedLog = nil
+            guiElements.CodeText.Text = "-- Select remote --"
+            safeUpdateGUI(guiElements)
+        end,
+        
+        UnblockAll = function()
+            spyData.blockedRemotes = {}
+            guiElements.CodeText.Text = "✅ All blocks cleared"
+            safeUpdateGUI(guiElements)
         end
-        guiElements.CodeText.Text = (spyData.selectedLog and generateCode(spyData.selectedLog) or "") .. "\n\n✅ All blocks cleared"
-        updateGUI(guiElements)
-    end)
+    }
 
-    -- Initialize hooks
-    local hookSuccess = initializeHooks()
-    if hookSuccess then
-        guiElements.StatusLabel.Text = "Hooks active | Ready"
-    else
-        guiElements.StatusLabel.Text = "Hooks failed | Limited functionality"
-        guiElements.StatusLabel.TextColor3 = COLORS.ERROR
+    -- Connect control buttons
+    for name, callback in pairs(controls) do
+        local button = guiElements.ControlPanel and guiElements.ControlPanel:FindFirstChild(name)
+        safeConnect(button, callback)
     end
 
-    -- Auto-update GUI
-    local lastUpdate = 0
-    local updateConnection = RunService.Heartbeat:Connect(function()
-        if tick() - lastUpdate > 0.2 then
-            if guiElements.ScreenGui.Parent then
-                updateGUI(guiElements)
-                lastUpdate = tick()
-            else
-                updateConnection:Disconnect()
+    -- Initialize hooks
+    initializeSimpleHooks()
+
+    -- Auto-update
+    local updateConn
+    updateConn = RunService.Heartbeat:Connect(function()
+        if guiElements.ScreenGui and guiElements.ScreenGui.Parent then
+            safeUpdateGUI(guiElements)
+        else
+            if updateConn then
+                updateConn:Disconnect()
             end
         end
     end)
@@ -867,16 +819,16 @@ local function initializeSpy()
     return true
 end
 
--- Start the spy
+-- Start
 if not _G.GigaChadSpyLoaded then
     _G.GigaChadSpyLoaded = true
-    local success, err = pcall(initializeSpy)
+    local success = ultraSafeCall(initializeSpy, "Spy initialization failed")
     if success then
-        print("[GigaChad Spy] ✅ Successfully loaded")
+        print("GigaChad Spy: ✅ Loaded successfully")
     else
-        warn("[GigaChad Spy] ❌ Load failed: " .. tostring(err))
+        print("GigaChad Spy: ❌ Failed to load")
         _G.GigaChadSpyLoaded = false
     end
 else
-    print("[GigaChad Spy] ⚠️ Already running")
+    print("GigaChad Spy: ⚠️ Already loaded")
 end
